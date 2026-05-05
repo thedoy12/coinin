@@ -33,6 +33,27 @@ const shouldApply = process.argv.includes("--apply");
 const onlyActive = !process.argv.includes("--include-inactive");
 const shouldPrune = !process.argv.includes("--no-prune");
 const maxGameCatalogSize = 35;
+const priorityGameSlugs = [
+  "mobile-legends",
+  "free-fire",
+  "pubg-mobile",
+  "genshin-impact",
+  "honkai-star-rail",
+  "honor-of-kings",
+  "call-of-duty-mobile",
+  "valorant",
+  "roblox",
+  "arena-of-valor",
+  "league-of-legends-wild-rift",
+  "efootball",
+  "fc-mobile",
+  "blood-strike",
+  "delta-force",
+  "wuthering-waves",
+  "zenless-zone-zero",
+  "point-blank",
+  "point-blank-via-id",
+];
 
 async function main() {
   console.log(`Sync HataMarket products (${shouldApply ? "apply" : "dry-run"})...`);
@@ -315,6 +336,11 @@ function selectGameSlugs(rows: NormalizedService[]) {
   const selectedSlugs: string[] = [];
   const availableGameSlugs = new Set<string>();
   const requiredGameSlugs = new Set<string>();
+  const addSlug = (slug: string) => {
+    if (!availableGameSlugs.has(slug) || selectedSlugs.includes(slug)) return;
+    if (selectedSlugs.length >= maxGameCatalogSize) return;
+    selectedSlugs.push(slug);
+  };
 
   for (const row of rows) {
     if (!isGameCatalogService(row)) continue;
@@ -322,9 +348,10 @@ function selectGameSlugs(rows: NormalizedService[]) {
     if (isRequiredGame(row.gameName)) {
       requiredGameSlugs.add(row.gameSlug);
     }
-    if (!selectedSlugs.includes(row.gameSlug) && selectedSlugs.length < maxGameCatalogSize) {
-      selectedSlugs.push(row.gameSlug);
-    }
+  }
+
+  for (const slug of priorityGameSlugs) {
+    addSlug(slug);
   }
 
   for (const slug of requiredGameSlugs) {
@@ -333,6 +360,11 @@ function selectGameSlugs(rows: NormalizedService[]) {
       selectedSlugs.pop();
     }
     selectedSlugs.push(slug);
+  }
+
+  for (const row of rows) {
+    if (!isGameCatalogService(row)) continue;
+    addSlug(row.gameSlug);
   }
 
   return new Set(selectedSlugs.filter((slug) => availableGameSlugs.has(slug)));

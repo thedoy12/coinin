@@ -280,7 +280,7 @@ export default function Home() {
             {
               icon: Swords,
               title: "Katalog Lengkap",
-              text: "Katalog mendukung 20 game teratas, pulsa, dan token PLN.",
+              text: "Katalog mendukung 35 game teratas, pulsa, dan token PLN.",
             },
             {
               icon: Headphones,

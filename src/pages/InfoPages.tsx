@@ -20,7 +20,7 @@ export function AboutPage() {
     >
       <InfoSection title="Apa Yang Kami Sediakan">
         <p>
-          CoinIn menyediakan layanan top up untuk 20 game teratas, pulsa, dan token PLN melalui integrasi penyedia layanan resmi. Pengguna dapat memilih produk, memasukkan data tujuan, melakukan pembayaran, lalu memantau status transaksi secara real-time.
+          CoinIn menyediakan layanan top up untuk 35 game teratas, pulsa, dan token PLN melalui integrasi penyedia layanan resmi. Pengguna dapat memilih produk, memasukkan data tujuan, melakukan pembayaran, lalu memantau status transaksi secara real-time.
         </p>
       </InfoSection>
       <InfoSection title="Komitmen Layanan">

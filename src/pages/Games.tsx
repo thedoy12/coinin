@@ -12,7 +12,7 @@ export default function Games() {
 
   useSEO({
     title: "Katalog Game Top Up | CoinIn",
-    description: "Lihat katalog 20 game teratas, pulsa, dan token PLN yang tersedia di CoinIn.",
+    description: "Lihat katalog 35 game teratas, pulsa, dan token PLN yang tersedia di CoinIn.",
     canonicalPath: "/games",
     keywords: "katalog top up game, pulsa, token pln",
   });
