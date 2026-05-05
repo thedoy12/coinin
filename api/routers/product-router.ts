@@ -31,7 +31,9 @@ export const productRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const gameResult = await db
-        .select(productColumns)
+        .select({
+          id: games.id,
+        })
         .from(games)
         .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), publicSafeGameFilter()))
         .limit(1);
@@ -50,7 +52,7 @@ export const productRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const result = await db
-        .select()
+        .select(productColumns)
         .from(products)
         .innerJoin(games, eq(products.gameId, games.id))
         .where(and(
