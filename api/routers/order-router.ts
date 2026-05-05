@@ -2,9 +2,10 @@ import { z } from "zod";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { transactions, products, games } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
+import { publicSafeGameFilter, publicSafeProductFilter } from "../lib/catalog-safety";
 
 const referenceIdInput = z.string().trim().regex(/^TRX-[A-Z0-9_-]{8,32}$/);
 
@@ -24,12 +25,18 @@ export const orderRouter = createRouter({
         .select({ product: products, game: games })
         .from(products)
         .innerJoin(games, eq(products.gameId, games.id))
-        .where(eq(products.id, input.productId))
+        .where(and(
+          eq(products.id, input.productId),
+          eq(products.isActive, 1),
+          eq(games.isActive, 1),
+          publicSafeGameFilter(),
+          publicSafeProductFilter(),
+        ))
         .limit(1);
 
       const product = productResult[0]?.product;
       const game = productResult[0]?.game;
-      if (!product || !game || product.isActive !== 1 || game.isActive !== 1) {
+      if (!product || !game) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Produk tidak ditemukan",

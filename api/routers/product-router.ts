@@ -2,7 +2,10 @@ import { z } from "zod";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { products, games } from "@db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, getTableColumns } from "drizzle-orm";
+import { publicSafeGameFilter, publicSafeProductFilter } from "../lib/catalog-safety";
+
+const productColumns = getTableColumns(products);
 
 export const productRouter = createRouter({
   byGame: publicQuery
@@ -10,9 +13,16 @@ export const productRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       return db
-        .select()
+        .select(productColumns)
         .from(products)
-        .where(and(eq(products.gameId, input.gameId), eq(products.isActive, 1)))
+        .innerJoin(games, eq(products.gameId, games.id))
+        .where(and(
+          eq(products.gameId, input.gameId),
+          eq(products.isActive, 1),
+          eq(games.isActive, 1),
+          publicSafeGameFilter(),
+          publicSafeProductFilter(),
+        ))
         .orderBy(products.productType, products.priceSell);
     }),
 
@@ -21,9 +31,9 @@ export const productRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const gameResult = await db
-        .select()
+        .select(productColumns)
         .from(games)
-        .where(eq(games.slug, input.slug))
+        .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), publicSafeGameFilter()))
         .limit(1);
 
       if (!gameResult[0]) return [];
@@ -31,7 +41,7 @@ export const productRouter = createRouter({
       return db
         .select()
         .from(products)
-        .where(and(eq(products.gameId, gameResult[0].id), eq(products.isActive, 1)))
+        .where(and(eq(products.gameId, gameResult[0].id), eq(products.isActive, 1), publicSafeProductFilter()))
         .orderBy(products.productType, products.priceSell);
     }),
 
@@ -42,7 +52,14 @@ export const productRouter = createRouter({
       const result = await db
         .select()
         .from(products)
-        .where(eq(products.id, input.id))
+        .innerJoin(games, eq(products.gameId, games.id))
+        .where(and(
+          eq(products.id, input.id),
+          eq(products.isActive, 1),
+          eq(games.isActive, 1),
+          publicSafeGameFilter(),
+          publicSafeProductFilter(),
+        ))
         .limit(1);
       return result[0] ?? null;
     }),

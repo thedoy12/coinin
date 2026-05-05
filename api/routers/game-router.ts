@@ -2,7 +2,8 @@ import { z } from "zod";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games } from "@db/schema";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { publicSafeGameFilter } from "../lib/catalog-safety";
 
 const featuredGameSlugs = [
   "mobile-legends",
@@ -22,7 +23,11 @@ const featuredGameSlugs = [
 export const gameRouter = createRouter({
   list: publicQuery.query(async () => {
     const db = getDb();
-    return db.select().from(games).where(eq(games.isActive, 1)).orderBy(games.name);
+    return db
+      .select()
+      .from(games)
+      .where(and(eq(games.isActive, 1), publicSafeGameFilter()))
+      .orderBy(games.name);
   }),
 
   featured: publicQuery.query(async () => {
@@ -30,7 +35,7 @@ export const gameRouter = createRouter({
     return db
       .select()
       .from(games)
-      .where(inArray(games.slug, featuredGameSlugs))
+      .where(and(eq(games.isActive, 1), inArray(games.slug, featuredGameSlugs), publicSafeGameFilter()))
       .orderBy(sql`array_position(ARRAY[${sql.join(featuredGameSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`);
   }),
 
@@ -41,7 +46,7 @@ export const gameRouter = createRouter({
       const result = await db
         .select()
         .from(games)
-        .where(eq(games.slug, input.slug))
+        .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), publicSafeGameFilter()))
         .limit(1);
       return result[0] ?? null;
     }),

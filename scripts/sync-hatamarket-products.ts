@@ -3,6 +3,7 @@ import { games, products, transactions } from "../db/schema";
 import { markup } from "../api/lib/markup";
 import { getTopupServices } from "../api/lib/topup";
 import { getDb } from "../api/queries/connection";
+import { isSensitiveCatalogText } from "../api/lib/catalog-safety";
 
 type HataMarketService = {
   id: string;
@@ -363,8 +364,7 @@ function isKnownGameService(row: NormalizedService) {
 }
 
 function isSensitiveCatalogService(row: NormalizedService) {
-  const text = `${row.gameName} ${row.gameSlug} ${row.productName} ${row.providerCode}`.toLowerCase();
-  return /judi|slot|casino|poker|togel|\bbet\b|betting|domino|gaple|capsa|qiu|\bqq\b|8\s*ball|billiard|sex|sexy|porn|porno|dewasa|crypto|kripto|bitcoin|binance|usdt|trading|forex/.test(text);
+  return isSensitiveCatalogText(row.gameName, row.gameSlug, row.productName, row.providerCode);
 }
 
 function inferProductType(row: HataMarketService): "general" | "membership" {
