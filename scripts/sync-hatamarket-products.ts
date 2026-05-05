@@ -3,7 +3,7 @@ import { games, products, transactions } from "../db/schema";
 import { markup } from "../api/lib/markup";
 import { getTopupServices } from "../api/lib/topup";
 import { getDb } from "../api/queries/connection";
-import { isSensitiveCatalogText } from "../api/lib/catalog-safety";
+import { getPublicCatalogThumbnail, isSensitiveCatalogText } from "../api/lib/catalog-safety";
 
 type HataMarketService = {
   id: string;
@@ -117,7 +117,7 @@ async function main() {
       set: {
         name: sql`excluded."name"`,
         category: sql`excluded."category"`,
-        thumbnail: sql`COALESCE(${games.thumbnail}, excluded."thumbnail")`,
+        thumbnail: sql`excluded."thumbnail"`,
         requiresZoneId: sql`excluded."requiresZoneId"`,
         instructions: sql`excluded."instructions"`,
         isActive: 1,
@@ -312,7 +312,7 @@ function normalizeService(row: HataMarketService): NormalizedService {
     gameName,
     gameSlug: normalizeSlug(gameName),
     category: inferCategory(gameName, row.type),
-    thumbnail: buildThumbnailUrl(gameName),
+    thumbnail: buildThumbnailUrl(gameName, normalizeSlug(gameName)),
     providerCode: row.kode.trim(),
     productName,
     productType: inferProductType(row),
@@ -411,7 +411,10 @@ function inferProductType(row: HataMarketService): "general" | "membership" {
   return "general";
 }
 
-function buildThumbnailUrl(gameName: string) {
+function buildThumbnailUrl(gameName: string, gameSlug: string) {
+  const publicThumbnail = getPublicCatalogThumbnail(gameSlug);
+  if (publicThumbnail) return publicThumbnail;
+
   const initials = gameName
     .split(/\s+/)
     .filter(Boolean)

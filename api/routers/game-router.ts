@@ -3,7 +3,7 @@ import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games } from "@db/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { publicCatalogSlugs, publicSafeGameFilter } from "../lib/catalog-safety";
+import { getPublicCatalogThumbnail, publicCatalogSlugs, publicSafeGameFilter } from "../lib/catalog-safety";
 
 const featuredGameSlugs = [
   "mobile-legends",
@@ -27,7 +27,8 @@ export const gameRouter = createRouter({
       .select()
       .from(games)
       .where(and(eq(games.isActive, 1), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
-      .orderBy(sql`array_position(ARRAY[${sql.join(publicCatalogSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`);
+      .orderBy(sql`array_position(ARRAY[${sql.join(publicCatalogSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`)
+      .then(withPublicThumbnails);
   }),
 
   featured: publicQuery.query(async () => {
@@ -36,7 +37,8 @@ export const gameRouter = createRouter({
       .select()
       .from(games)
       .where(and(eq(games.isActive, 1), inArray(games.slug, featuredGameSlugs), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
-      .orderBy(sql`array_position(ARRAY[${sql.join(featuredGameSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`);
+      .orderBy(sql`array_position(ARRAY[${sql.join(featuredGameSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`)
+      .then(withPublicThumbnails);
   }),
 
   bySlug: publicQuery
@@ -48,6 +50,17 @@ export const gameRouter = createRouter({
         .from(games)
         .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
         .limit(1);
-      return result[0] ?? null;
+      return result[0] ? withPublicThumbnail(result[0]) : null;
     }),
 });
+
+function withPublicThumbnails<T extends { slug: string; thumbnail: string | null }>(rows: T[]) {
+  return rows.map(withPublicThumbnail);
+}
+
+function withPublicThumbnail<T extends { slug: string; thumbnail: string | null }>(game: T) {
+  return {
+    ...game,
+    thumbnail: getPublicCatalogThumbnail(game.slug, game.thumbnail),
+  };
+}
