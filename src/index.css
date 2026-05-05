@@ -1,0 +1,239 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.625rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .gaming-bg {
+    background:
+      linear-gradient(135deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.94)),
+      radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.16), transparent 28%),
+      radial-gradient(circle at 82% 18%, rgba(34, 211, 238, 0.12), transparent 30%),
+      radial-gradient(circle at 54% 86%, rgba(244, 63, 94, 0.1), transparent 32%);
+  }
+
+  .neon-grid {
+    background-image:
+      linear-gradient(rgba(245, 158, 11, 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.08) 1px, transparent 1px);
+    background-size: 42px 42px;
+    animation: grid-drift 18s linear infinite;
+    mask-image: linear-gradient(to bottom, transparent, black 15%, black 78%, transparent);
+  }
+
+  .scanline {
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(255, 255, 255, 0.04),
+      transparent
+    );
+    animation: scanline 5s ease-in-out infinite;
+  }
+
+  .neon-card {
+    position: relative;
+    box-shadow:
+      0 0 0 1px rgba(148, 163, 184, 0.09),
+      0 16px 44px rgba(0, 0, 0, 0.35);
+  }
+
+  .neon-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), transparent 35%, rgba(34, 211, 238, 0.22));
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  .neon-card:hover::before {
+    opacity: 1;
+  }
+
+  .coin-float {
+    animation: coin-float 3.4s ease-in-out infinite;
+  }
+
+  .coin-float-delayed {
+    animation: coin-float 4.1s ease-in-out infinite;
+    animation-delay: 0.7s;
+  }
+
+  .pulse-pop {
+    animation: pulse-pop 2.6s ease-in-out infinite;
+  }
+
+  .hover-lift {
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-5px) scale(1.015);
+  }
+
+  .cinematic-stage {
+    background:
+      linear-gradient(90deg, rgba(2, 6, 23, 0.94), rgba(15, 23, 42, 0.68), rgba(2, 6, 23, 0.94)),
+      radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.26), transparent 28%),
+      radial-gradient(circle at 80% 34%, rgba(248, 113, 113, 0.18), transparent 26%),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(2, 6, 23, 0.98)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='520' viewBox='0 0 900 520'%3E%3Crect width='900' height='520' fill='%23020813'/%3E%3Cg opacity='.28' stroke='%2338bdf8' stroke-width='1'%3E%3Cpath d='M40 90h810M70 150h760M20 230h860M80 320h740M30 430h830'/%3E%3Cpath d='M110 40v420M250 20v470M420 60v390M610 30v460M780 80v360'/%3E%3C/g%3E%3Cg opacity='.28' fill='%23000'%3E%3Cpath d='M84 430c18-62 55-62 74 0zM180 432c14-88 64-88 80 0zM292 430c17-70 56-70 76 0zM415 432c16-92 70-92 88 0zM550 430c18-76 60-76 80 0zM690 432c15-82 66-82 82 0z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: cover;
+    background-position: center;
+  }
+
+  .hud-frame {
+    position: relative;
+    clip-path: polygon(0 18px, 18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px));
+  }
+
+  .hud-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    clip-path: inherit;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: inset 0 0 28px rgba(56, 189, 248, 0.12);
+  }
+
+  .angle-card {
+    clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+  }
+
+  .section-title-gaming {
+    text-shadow:
+      0 0 16px rgba(56, 189, 248, 0.35),
+      0 0 26px rgba(245, 158, 11, 0.2);
+  }
+
+  .poster-glow {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.3),
+      0 24px 60px rgba(8, 47, 73, 0.45),
+      inset 0 0 36px rgba(56, 189, 248, 0.08);
+  }
+}
+
+@keyframes grid-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 42px 42px;
+  }
+}
+
+@keyframes scanline {
+  0%,
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  35%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes coin-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(8deg);
+  }
+}
+
+@keyframes pulse-pop {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(245, 158, 11, 0));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.5));
+  }
+}

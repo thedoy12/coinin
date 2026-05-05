@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#020617"/>
+      <stop offset="0.55" stop-color="#111827"/>
+      <stop offset="1" stop-color="#3b1f04"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#fbbf24"/>
+      <stop offset="0.5" stop-color="#a5f3fc"/>
+      <stop offset="1" stop-color="#fda4af"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g opacity="0.18" stroke="#f59e0b">
+    <path d="M0 90h1200M0 180h1200M0 270h1200M0 360h1200M0 450h1200M0 540h1200"/>
+    <path d="M100 0v630M220 0v630M340 0v630M460 0v630M580 0v630M700 0v630M820 0v630M940 0v630M1060 0v630"/>
+  </g>
+  <circle cx="930" cy="170" r="95" fill="#f59e0b" opacity="0.22"/>
+  <circle cx="1010" cy="430" r="130" fill="#22d3ee" opacity="0.12"/>
+  <text x="90" y="250" font-family="Arial, sans-serif" font-size="92" font-weight="900" fill="url(#text)">CoinIn</text>
+  <text x="94" y="330" font-family="Arial, sans-serif" font-size="38" font-weight="700" fill="#e2e8f0">Top Up Game Cepat, Aman, Otomatis</text>
+  <text x="94" y="395" font-family="Arial, sans-serif" font-size="28" fill="#94a3b8">Mobile Legends • Free Fire • PUBG Mobile • Genshin Impact</text>
+  <rect x="94" y="445" width="275" height="58" rx="29" fill="#f59e0b"/>
+  <text x="130" y="484" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#020617">QRIS 24/7 READY</text>
+</svg>
