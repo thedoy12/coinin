@@ -32,7 +32,7 @@ type NormalizedService = {
 const shouldApply = process.argv.includes("--apply");
 const onlyActive = !process.argv.includes("--include-inactive");
 const shouldPrune = !process.argv.includes("--no-prune");
-const maxGameCatalogSize = 50;
+const maxGameCatalogSize = 20;
 
 async function main() {
   console.log(`Sync HataMarket products (${shouldApply ? "apply" : "dry-run"})...`);
@@ -279,7 +279,9 @@ function isService(value: unknown): value is HataMarketService {
 }
 
 function normalizeService(row: HataMarketService): NormalizedService {
-  const gameName = normalizeName(row.game);
+  const rawGameName = normalizeName(row.game);
+  const productName = normalizeName(row.nama_layanan);
+  const gameName = normalizeUtilityGameName(rawGameName, productName);
   const priceModal = Number.parseInt(row.harga, 10);
   if (!Number.isFinite(priceModal) || priceModal <= 0) {
     throw new Error(`Invalid price for service ${row.kode}`);
@@ -291,7 +293,7 @@ function normalizeService(row: HataMarketService): NormalizedService {
     category: inferCategory(gameName, row.type),
     thumbnail: buildThumbnailUrl(gameName),
     providerCode: row.kode.trim(),
-    productName: normalizeName(row.nama_layanan),
+    productName,
     productType: inferProductType(row),
     priceModal,
     priceSell: markup(priceModal),
@@ -357,7 +359,7 @@ function isPulsaService(gameName: string, productName: string) {
 function isKnownGameService(row: NormalizedService) {
   if (row.category === "Voucher" || row.category === "Digital") return false;
   const text = `${row.gameName} ${row.productName}`.toLowerCase();
-  if (/hbo|iqiyi|indomaret|razer\s*gold|spotify|netflix|vidio|viu|google\s*play|steam|voucher/.test(text)) {
+  if (/hbo|iqiyi|indomaret|razer\s*gold|spotify|netflix|vidio|viu|google\s*play|steam|voucher|telkomsel|indosat|im3|xl|axis|tri|three|smartfren|by\.?u/.test(text)) {
     return false;
   }
   return true;
@@ -417,6 +419,25 @@ function normalizeName(value: string) {
     .replace(/\bCodm\b/g, "CODM")
     .replace(/\bFf\b/g, "FF")
     .replace(/\bPln\b/g, "PLN");
+}
+
+function normalizeUtilityGameName(gameName: string, productName: string) {
+  const text = `${gameName} ${productName}`;
+  if (isPlnService(gameName)) {
+    return /token/i.test(gameName) ? "Token PLN" : "PLN";
+  }
+  if (!isPulsaService(gameName, productName)) {
+    return gameName;
+  }
+
+  if (/by\.?u/i.test(text)) return "Pulsa By.U";
+  if (/axis/i.test(text)) return "Pulsa Axis";
+  if (/xl/i.test(text)) return "Pulsa Xl";
+  if (/telkomsel/i.test(text)) return "Pulsa Telkomsel";
+  if (/indosat|im3/i.test(text)) return "Pulsa Indosat";
+  if (/tri|three/i.test(text)) return "Pulsa Tri";
+  if (/smartfren/i.test(text)) return "Pulsa Smartfren";
+  return gameName.toLowerCase().includes("pulsa") ? gameName : `Pulsa ${gameName}`;
 }
 
 function normalizeSlug(value: string) {

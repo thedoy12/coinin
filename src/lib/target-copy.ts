@@ -1,6 +1,6 @@
 export function getTargetCopy(gameName: string, category?: string | null) {
   const text = `${gameName} ${category ?? ""}`.toLowerCase();
-  if (/pln|token listrik/.test(text)) {
+  if (/pln|token listrik|token/.test(text)) {
     return {
       label: "No. Meter / ID Pelanggan",
       placeholder: "Masukkan no. meter / ID pelanggan",

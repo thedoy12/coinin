@@ -12,9 +12,9 @@ export default function Games() {
 
   useSEO({
     title: "Katalog Game Top Up | CoinIn",
-    description: "Lihat semua katalog game dan voucher digital yang tersedia di CoinIn.",
+    description: "Lihat katalog 20 game teratas, pulsa, dan token PLN yang tersedia di CoinIn.",
     canonicalPath: "/games",
-    keywords: "katalog top up game, semua game top up, voucher digital",
+    keywords: "katalog top up game, pulsa, token pln",
   });
 
   const categories = useMemo(
@@ -39,7 +39,7 @@ export default function Games() {
           Semua Layanan
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
-          Cari game, voucher, atau layanan digital yang ingin kamu top up.
+          Cari game, pulsa, atau token PLN yang ingin kamu top up.
         </p>
       </div>
 
@@ -64,7 +64,7 @@ export default function Games() {
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-200/70" />
           <Input
-            placeholder="Search game title..."
+            placeholder="Search layanan..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="h-12 rounded-none border-cyan-300/25 bg-slate-950/80 pl-10 font-semibold text-white placeholder:text-slate-500 focus-visible:ring-cyan-300/50"

@@ -21,17 +21,17 @@ import {
 
 export default function Home() {
   useSEO({
-    title: "CoinIn - Top Up Game & Produk Digital Cepat 24 Jam",
+    title: "CoinIn - Top Up Game, Pulsa, dan Token PLN Cepat 24 Jam",
     description:
-      "Top up game, pulsa, paket data, token PLN, dan voucher digital di CoinIn. Pembayaran QRIS, VA, e-wallet, proses otomatis, dan status real-time.",
+      "Top up game, pulsa, dan token PLN di CoinIn. Pembayaran QRIS, VA, e-wallet, proses otomatis, dan status real-time.",
     canonicalPath: "/",
     keywords:
-      "top up game online, pulsa online, paket data, token pln, voucher digital, qris, virtual account",
+      "top up game online, pulsa online, token pln, qris, virtual account",
   });
   useHomeStructuredData();
 
   const [search, setSearch] = useState("");
-  const { data: games, isLoading } = trpc.game.featured.useQuery();
+  const { data: games, isLoading } = trpc.game.list.useQuery();
 
   const filteredGames = games?.filter((game) => {
     const value = search.toLowerCase();
@@ -60,7 +60,7 @@ export default function Home() {
               <div className="max-w-3xl">
                 <div className="mb-5 inline-flex items-center gap-2 border border-cyan-300/40 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
                   <Sparkles className="h-4 w-4 text-cyan-200" />
-                  Top Up & Produk Digital
+                  Top Up Game, Pulsa, Token PLN
                 </div>
                 <h1 className="section-title-gaming text-5xl font-black uppercase italic leading-[0.92] text-white sm:text-6xl lg:text-8xl">
                   Top Up
@@ -69,7 +69,7 @@ export default function Home() {
                   </span>
                 </h1>
                 <p className="mt-6 max-w-xl text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Top up game, pulsa, paket data, token PLN, dan voucher digital. Bayar cepat, cek status real-time, semua dalam satu tempat.
+                  Top up game, pulsa, dan token PLN. Bayar cepat, cek status real-time, semua dalam satu tempat.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a href="#game-store">
@@ -176,7 +176,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <span className="bg-cyan-300 px-3 py-1 text-[10px] font-black uppercase text-slate-950">
-                      Slot {index + 1}
+                      Top {index + 1}
                     </span>
                     <h3 className="mt-3 text-lg font-black uppercase italic text-white">{game.name}</h3>
                   </div>
@@ -214,7 +214,7 @@ export default function Home() {
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-200/70" />
             <Input
-              placeholder="Search featured game..."
+              placeholder="Search layanan..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="h-12 rounded-none border-cyan-300/25 bg-slate-950/80 pl-10 font-semibold text-white placeholder:text-slate-500 focus-visible:ring-cyan-300/50"
@@ -255,7 +255,7 @@ export default function Home() {
           <h2 className="section-title-gaming text-3xl font-black uppercase italic text-white">Mission Briefing</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
-              ["01", "Pilih Layanan", "Cari game, pulsa, token PLN, voucher, atau produk digital lain."],
+              ["01", "Pilih Layanan", "Cari game, pulsa, atau token PLN."],
               ["02", "Isi Tujuan", "Masukkan ID pemain, nomor HP, atau ID pelanggan sesuai jenis produk."],
               ["03", "Bayar", "Selesaikan pembayaran dan cek status transaksi secara real-time."],
             ].map(([step, title, text]) => (
@@ -280,7 +280,7 @@ export default function Home() {
             {
               icon: Swords,
               title: "Katalog Lengkap",
-              text: "Katalog mendukung game, pulsa, voucher, dan produk digital.",
+              text: "Katalog mendukung 20 game teratas, pulsa, dan token PLN.",
             },
             {
               icon: Headphones,

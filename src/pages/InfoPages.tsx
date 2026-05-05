@@ -7,7 +7,7 @@ const supportWhatsapp = "+62 895-3930-6153-6";
 export function AboutPage() {
   useSEO({
     title: "Tentang Kami | CoinIn",
-    description: "Tentang CoinIn, layanan top up game dan produk digital dengan pembayaran online dan status transaksi real-time.",
+    description: "Tentang CoinIn, layanan top up game, pulsa, dan token PLN dengan pembayaran online dan status transaksi real-time.",
     canonicalPath: "/tentang-kami",
   });
 
@@ -15,12 +15,12 @@ export function AboutPage() {
     <InfoShell
       eyebrow="Tentang Kami"
       title="CoinIn membantu transaksi digital jadi lebih ringkas."
-      description="CoinIn adalah platform top up game dan produk digital yang dirancang untuk pembeli yang ingin proses cepat, instruksi jelas, dan status order yang mudah dipantau."
+      description="CoinIn adalah platform top up game, pulsa, dan token PLN yang dirancang untuk pembeli yang ingin proses cepat, instruksi jelas, dan status order yang mudah dipantau."
       icon={<Store className="h-6 w-6" />}
     >
       <InfoSection title="Apa Yang Kami Sediakan">
         <p>
-          CoinIn menyediakan layanan top up game, voucher digital, pulsa, paket data, dan produk digital lain melalui integrasi penyedia layanan resmi. Pengguna dapat memilih produk, memasukkan data tujuan, melakukan pembayaran, lalu memantau status transaksi secara real-time.
+          CoinIn menyediakan layanan top up untuk 20 game teratas, pulsa, dan token PLN melalui integrasi penyedia layanan resmi. Pengguna dapat memilih produk, memasukkan data tujuan, melakukan pembayaran, lalu memantau status transaksi secara real-time.
         </p>
       </InfoSection>
       <InfoSection title="Komitmen Layanan">
@@ -70,7 +70,7 @@ export function ContactPage() {
       <InfoSection title="Data Yang Perlu Disiapkan">
         <ul>
           <li>Reference ID transaksi.</li>
-          <li>Nama game atau produk digital yang dibeli.</li>
+          <li>Nama game, pulsa, atau token PLN yang dibeli.</li>
           <li>Nomor/email pembayaran jika diminta untuk verifikasi.</li>
           <li>Screenshot pembayaran jika pembayaran sudah berhasil namun status belum berubah.</li>
         </ul>
@@ -103,12 +103,12 @@ export function PrivacyPolicyPage() {
       </InfoSection>
       <InfoSection title="Penggunaan Data">
         <p>
-          Data digunakan untuk memproses order, mengirim produk digital, memverifikasi pembayaran, menyediakan support pelanggan, menjaga keamanan layanan, dan memenuhi kebutuhan operasional serta pencatatan transaksi.
+          Data digunakan untuk memproses order, mengirim layanan top up, memverifikasi pembayaran, menyediakan support pelanggan, menjaga keamanan layanan, dan memenuhi kebutuhan operasional serta pencatatan transaksi.
         </p>
       </InfoSection>
       <InfoSection title="Berbagi Data">
         <p>
-          CoinIn dapat membagikan data yang diperlukan kepada payment gateway, penyedia produk digital, atau pihak pendukung teknis hanya sejauh dibutuhkan untuk memproses transaksi dan menjaga layanan tetap berjalan.
+          CoinIn dapat membagikan data yang diperlukan kepada payment gateway, penyedia layanan top up, atau pihak pendukung teknis hanya sejauh dibutuhkan untuk memproses transaksi dan menjaga layanan tetap berjalan.
         </p>
       </InfoSection>
       <InfoSection title="Keamanan Dan Penyimpanan">
@@ -128,7 +128,7 @@ export function PrivacyPolicyPage() {
 export function TermsPage() {
   useSEO({
     title: "Ketentuan Layanan | CoinIn",
-    description: "Ketentuan penggunaan layanan CoinIn untuk transaksi top up game dan produk digital.",
+    description: "Ketentuan penggunaan layanan CoinIn untuk transaksi top up game, pulsa, dan token PLN.",
     canonicalPath: "/ketentuan-layanan",
   });
 
