@@ -3,9 +3,15 @@ import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { auditLogs, transactions, games, products, providerApiLogs, users } from "@db/schema";
-import { and, desc, eq, sql, count } from "drizzle-orm";
+import { and, desc, eq, sql, count, inArray } from "drizzle-orm";
 import { writeAuditLog } from "../lib/audit";
 import { hashPassword } from "../lib/password";
+import {
+  isSensitiveCatalogText,
+  publicCatalogSlugs,
+  publicSafeGameFilter,
+  publicSafeProductFilter,
+} from "../lib/catalog-safety";
 import {
   expireOldTransactions,
   fulfillPaidTransaction,
@@ -73,12 +79,19 @@ export const adminRouter = createRouter({
     const activeProducts = await db
       .select({ count: count() })
       .from(products)
-      .where(eq(products.isActive, 1));
+      .innerJoin(games, eq(products.gameId, games.id))
+      .where(and(
+        eq(products.isActive, 1),
+        eq(games.isActive, 1),
+        inArray(games.slug, publicCatalogSlugs),
+        publicSafeGameFilter(),
+        publicSafeProductFilter(),
+      ));
 
     const activeGames = await db
       .select({ count: count() })
       .from(games)
-      .where(eq(games.isActive, 1));
+      .where(and(eq(games.isActive, 1), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()));
 
     const recentTransactions = await db
       .select({
@@ -118,6 +131,11 @@ export const adminRouter = createRouter({
       })
       .from(products)
       .innerJoin(games, eq(products.gameId, games.id))
+      .where(and(
+        inArray(games.slug, publicCatalogSlugs),
+        publicSafeGameFilter(),
+        publicSafeProductFilter(),
+      ))
       .orderBy(games.name, products.priceSell);
 
     return rows.map((row) => ({
@@ -129,7 +147,11 @@ export const adminRouter = createRouter({
 
   games: adminQuery.query(async () => {
     const db = getDb();
-    return db.select().from(games).orderBy(games.name);
+    return db
+      .select()
+      .from(games)
+      .where(and(inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
+      .orderBy(sql`array_position(ARRAY[${sql.join(publicCatalogSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`);
   }),
 
   users: adminQuery.query(async () => {
@@ -388,6 +410,12 @@ export const adminRouter = createRouter({
         .from(products)
         .where(eq(products.id, input.productId))
         .limit(1);
+      if (!before[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Produk tidak ditemukan",
+        });
+      }
 
       const update: Partial<typeof products.$inferInsert> = {
         updatedAt: new Date(),
@@ -397,6 +425,18 @@ export const adminRouter = createRouter({
       if (input.providerCode !== undefined) update.providerCode = input.providerCode;
       if (input.productType !== undefined) update.productType = input.productType;
       if (input.isActive !== undefined) update.isActive = input.isActive ? 1 : 0;
+
+      if (
+        isSensitiveCatalogText(
+          input.providerCode ?? before[0]?.providerCode,
+          before[0]?.name,
+        )
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Produk terkait judi, porno, atau crypto tidak diizinkan.",
+        });
+      }
 
       await db.update(products).set(update).where(eq(products.id, input.productId));
       await writeAuditLog({
@@ -425,6 +465,23 @@ export const adminRouter = createRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      const targetGame = await db
+        .select()
+        .from(games)
+        .where(and(eq(games.id, input.gameId), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
+        .limit(1);
+      if (!targetGame[0]) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Game tidak tersedia di katalog publik.",
+        });
+      }
+      if (isSensitiveCatalogText(input.name, input.providerCode, targetGame[0].name, targetGame[0].slug)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Produk terkait judi, porno, atau crypto tidak diizinkan.",
+        });
+      }
       const inserted = await db
         .insert(products)
         .values({
@@ -468,6 +525,10 @@ export const adminRouter = createRouter({
         const gameInfo = detectGame(row);
         if (!gameInfo) {
           skipped.push({ code: row.code, reason: "Game tidak dikenali" });
+          continue;
+        }
+        if (isSensitiveCatalogText(gameInfo.name, gameInfo.slug, row.name, row.code)) {
+          skipped.push({ code: row.code, reason: "Produk sensitif tidak diizinkan" });
           continue;
         }
 
@@ -559,11 +620,18 @@ export const adminRouter = createRouter({
 
   createGame: adminQuery.input(gameInput).mutation(async ({ input, ctx }) => {
     const db = getDb();
+    const slug = normalizeSlug(input.slug);
+    if (isSensitiveCatalogText(input.name, slug, input.category)) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Game terkait judi, porno, atau crypto tidak diizinkan.",
+      });
+    }
     const inserted = await db
       .insert(games)
       .values({
         name: input.name,
-        slug: normalizeSlug(input.slug),
+        slug,
         thumbnail: input.thumbnail || null,
         category: input.category || null,
         instructions: input.instructions || null,
@@ -592,6 +660,12 @@ export const adminRouter = createRouter({
         .from(games)
         .where(eq(games.id, input.gameId))
         .limit(1);
+      if (!before[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game tidak ditemukan",
+        });
+      }
 
       const update: Partial<typeof games.$inferInsert> = {
         updatedAt: new Date(),
@@ -607,6 +681,19 @@ export const adminRouter = createRouter({
         update.requiresZoneId = input.requiresZoneId ? 1 : 0;
       }
       if (input.isActive !== undefined) update.isActive = input.isActive ? 1 : 0;
+
+      if (
+        isSensitiveCatalogText(
+          update.name ?? before[0]?.name,
+          update.slug ?? before[0]?.slug,
+          update.category ?? before[0]?.category,
+        )
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Game terkait judi, porno, atau crypto tidak diizinkan.",
+        });
+      }
 
       await db.update(games).set(update).where(eq(games.id, input.gameId));
       await writeAuditLog({
