@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { games, products } from "../db/schema";
 import { markup } from "../api/lib/markup";
 import { getTopupServices } from "../api/lib/topup";
@@ -60,81 +60,83 @@ async function main() {
   }
 
   const db = getDb();
-  let gamesCreated = 0;
-  let productsCreated = 0;
-  let productsUpdated = 0;
-
+  const existingGames = await db.select().from(games);
+  const existingGameSlugs = new Set(existingGames.map((game) => game.slug));
+  const uniqueRowsByGame = new Map<string, NormalizedService>();
   for (const row of rows) {
-    const existingGame = await db
-      .select()
-      .from(games)
-      .where(eq(games.slug, row.gameSlug))
-      .limit(1);
-
-    const game =
-      existingGame[0] ??
-      (
-        await db
-          .insert(games)
-          .values({
-            name: row.gameName,
-            slug: row.gameSlug,
-            category: row.category,
-            thumbnail: row.thumbnail,
-            requiresZoneId: row.requiresZoneId,
-            isActive: 1,
-            instructions: buildInstructions(row),
-          })
-          .returning()
-      )[0];
-
-    if (!existingGame[0]) {
-      gamesCreated += 1;
-    } else {
-      await db
-        .update(games)
-        .set({
-          name: row.gameName,
-          category: row.category,
-          thumbnail: existingGame[0].thumbnail ?? row.thumbnail,
-          requiresZoneId: row.requiresZoneId,
-          instructions: buildInstructions(row),
-          isActive: 1,
-          updatedAt: new Date(),
-        })
-        .where(eq(games.id, existingGame[0].id));
-    }
-
-    const existingProduct = await db
-      .select()
-      .from(products)
-      .where(eq(products.gameId, game.id))
-      .then((items) => items.find((item) => item.providerCode === row.providerCode));
-
-    if (existingProduct) {
-      await db
-        .update(products)
-        .set({
-          name: row.productName,
-          priceModal: row.priceModal,
-          priceSell: row.priceSell,
-          isActive: row.isActive,
-          updatedAt: new Date(),
-        })
-        .where(eq(products.id, existingProduct.id));
-      productsUpdated += 1;
-    } else {
-      await db.insert(products).values({
-        gameId: game.id,
-        providerCode: row.providerCode,
-        name: row.productName,
-        priceModal: row.priceModal,
-        priceSell: row.priceSell,
-        isActive: row.isActive,
-      });
-      productsCreated += 1;
+    if (!uniqueRowsByGame.has(row.gameSlug)) {
+      uniqueRowsByGame.set(row.gameSlug, row);
     }
   }
+
+  const gameValues = Array.from(uniqueRowsByGame.values()).map((row) => ({
+    name: row.gameName,
+    slug: row.gameSlug,
+    category: row.category,
+    thumbnail: row.thumbnail,
+    requiresZoneId: row.requiresZoneId,
+    isActive: 1,
+    instructions: buildInstructions(row),
+  }));
+
+  await db
+    .insert(games)
+    .values(gameValues)
+    .onConflictDoUpdate({
+      target: games.slug,
+      set: {
+        name: sql`excluded."name"`,
+        category: sql`excluded."category"`,
+        thumbnail: sql`COALESCE(${games.thumbnail}, excluded."thumbnail")`,
+        requiresZoneId: sql`excluded."requiresZoneId"`,
+        instructions: sql`excluded."instructions"`,
+        isActive: 1,
+        updatedAt: new Date(),
+      },
+    });
+
+  const syncedGames = await db.select().from(games);
+  const gameBySlug = new Map(syncedGames.map((game) => [game.slug, game]));
+
+  const existingProducts = await db.select().from(products);
+  const existingProductKeys = new Set(
+    existingProducts.map((product) => `${product.gameId}:${product.providerCode}`)
+  );
+  const productValues = rows.map((row) => {
+    const game = gameBySlug.get(row.gameSlug);
+    if (!game) {
+      throw new Error(`Game not found after sync: ${row.gameSlug}`);
+    }
+    return {
+      gameId: game.id,
+      providerCode: row.providerCode,
+      name: row.productName,
+      priceModal: row.priceModal,
+      priceSell: row.priceSell,
+      isActive: row.isActive,
+    };
+  });
+
+  for (const chunk of chunks(productValues, 500)) {
+    await db
+      .insert(products)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [products.gameId, products.providerCode],
+        set: {
+          name: sql`excluded."name"`,
+          priceModal: sql`excluded."priceModal"`,
+          priceSell: sql`excluded."priceSell"`,
+          isActive: sql`excluded."isActive"`,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  const productKeys = productValues.map((product) => `${product.gameId}:${product.providerCode}`);
+  const gamesCreated = Array.from(uniqueRowsByGame.keys()).filter((slug) => !existingGameSlugs.has(slug)).length;
+  const productsCreated = productKeys.filter((key) => !existingProductKeys.has(key)).length;
+  const productsUpdated = productKeys.length - productsCreated;
 
   console.log("Sync complete:");
   console.table({
@@ -143,6 +145,14 @@ async function main() {
     productsUpdated,
     totalServices: rows.length,
   });
+}
+
+function chunks<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
 }
 
 function extractServices(data: unknown): HataMarketService[] {
