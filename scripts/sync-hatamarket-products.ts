@@ -21,6 +21,7 @@ type NormalizedService = {
   thumbnail: string;
   providerCode: string;
   productName: string;
+  productType: "general" | "membership";
   priceModal: number;
   priceSell: number;
   isActive: number;
@@ -52,6 +53,7 @@ async function main() {
       game: row.gameName,
       code: row.providerCode,
       name: row.productName,
+      type: row.productType,
       modal: row.priceModal,
       sell: row.priceSell,
       active: row.isActive === 1,
@@ -111,6 +113,7 @@ async function main() {
       gameId: game.id,
       providerCode: row.providerCode,
       name: row.productName,
+      productType: row.productType,
       priceModal: row.priceModal,
       priceSell: row.priceSell,
       isActive: row.isActive,
@@ -125,6 +128,7 @@ async function main() {
         target: [products.gameId, products.providerCode],
         set: {
           name: sql`excluded."name"`,
+          productType: sql`excluded."productType"`,
           priceModal: sql`excluded."priceModal"`,
           priceSell: sql`excluded."priceSell"`,
           isActive: sql`excluded."isActive"`,
@@ -197,11 +201,22 @@ function normalizeService(row: HataMarketService): NormalizedService {
     thumbnail: buildThumbnailUrl(gameName),
     providerCode: row.kode.trim(),
     productName: normalizeName(row.nama_layanan),
+    productType: inferProductType(row),
     priceModal,
     priceSell: markup(priceModal),
     isActive: row.status.toLowerCase() === "aktif" ? 1 : 0,
     requiresZoneId: requiresZoneId(gameName) ? 1 : 0,
   };
+}
+
+function inferProductType(row: HataMarketService): "general" | "membership" {
+  const text = `${row.type} ${row.nama_layanan}`.toLowerCase();
+  if (
+    /membership|member|weekly|monthly|pass|subscription|langganan|welkin|battle pass|season pass|starlight|twilight|growth plan/.test(text)
+  ) {
+    return "membership";
+  }
+  return "general";
 }
 
 function buildThumbnailUrl(gameName: string) {

@@ -13,6 +13,7 @@ import {
 } from "../lib/transaction";
 
 const transactionStatus = z.enum(["pending", "processing", "success", "failed"]);
+const productType = z.enum(["general", "membership"]);
 const gameInput = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(255),
@@ -33,6 +34,7 @@ const importProductRow = z.object({
   thumbnail: z.string().max(500).optional(),
   instructions: z.string().optional(),
   requiresZoneId: z.boolean().optional(),
+  productType: productType.optional(),
 });
 
 export const adminRouter = createRouter({
@@ -290,6 +292,7 @@ export const adminRouter = createRouter({
         priceSell: z.number().positive().optional(),
         priceModal: z.number().positive().optional(),
         providerCode: z.string().min(1).max(100).optional(),
+        productType: productType.optional(),
         isActive: z.boolean().optional(),
       })
     )
@@ -307,6 +310,7 @@ export const adminRouter = createRouter({
       if (input.priceSell !== undefined) update.priceSell = input.priceSell;
       if (input.priceModal !== undefined) update.priceModal = input.priceModal;
       if (input.providerCode !== undefined) update.providerCode = input.providerCode;
+      if (input.productType !== undefined) update.productType = input.productType;
       if (input.isActive !== undefined) update.isActive = input.isActive ? 1 : 0;
 
       await db.update(products).set(update).where(eq(products.id, input.productId));
@@ -330,6 +334,7 @@ export const adminRouter = createRouter({
         name: z.string().min(1).max(255),
         priceModal: z.number().positive(),
         priceSell: z.number().positive(),
+        productType: productType.optional(),
         isActive: z.boolean().optional(),
       })
     )
@@ -341,6 +346,7 @@ export const adminRouter = createRouter({
           gameId: input.gameId,
           providerCode: input.providerCode,
           name: input.name,
+          productType: input.productType ?? "general",
           priceModal: input.priceModal,
           priceSell: input.priceSell,
           isActive: input.isActive === false ? 0 : 1,
@@ -418,6 +424,7 @@ export const adminRouter = createRouter({
             .set({
               gameId: game.id,
               name: cleanImportedName(row.name),
+              productType: row.productType ?? inferImportedProductType(row.name),
               priceModal,
               priceSell,
               isActive: 1,
@@ -430,6 +437,7 @@ export const adminRouter = createRouter({
             gameId: game.id,
             providerCode: row.code.trim(),
             name: cleanImportedName(row.name),
+            productType: row.productType ?? inferImportedProductType(row.name),
             priceModal,
             priceSell,
             isActive: 1,
@@ -591,6 +599,12 @@ function calculatePercentMarkup(price: number, percent: number) {
 
 function cleanImportedName(value: string) {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function inferImportedProductType(name: string): "general" | "membership" {
+  return /membership|member|weekly|monthly|pass|subscription|langganan|welkin|battle pass|season pass|starlight|twilight|growth plan/i.test(name)
+    ? "membership"
+    : "general";
 }
 
 type ImportProductRow = z.infer<typeof importProductRow>;

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Gamepad2, User, Hash, ShoppingCart, Sparkles, Coins } from "lucide-react";
@@ -94,6 +95,9 @@ export default function GameDetail() {
   }
 
   const targetCopy = getTargetCopy(game.name, game.category);
+  const generalProducts = products?.filter((product) => product.productType !== "membership") ?? [];
+  const membershipProducts = products?.filter((product) => product.productType === "membership") ?? [];
+  const hasMembershipProducts = membershipProducts.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -142,25 +146,22 @@ export default function GameDetail() {
               ))}
             </div>
           ) : products && products.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {products.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => setSelectedProduct(product.id)}
-                  className={`angle-card text-left p-4 border hover-lift transition-all duration-200 ${
-                    selectedProduct === product.id
-                      ? "border-cyan-300 bg-cyan-300/15 shadow-lg shadow-cyan-500/10"
-                      : "border-slate-700 bg-slate-950/70 hover:border-cyan-300/50"
-                  }`}
-                >
-                  <Sparkles className={`mb-2 h-4 w-4 ${selectedProduct === product.id ? "text-cyan-200" : "text-slate-600"}`} />
-                  <p className="font-semibold text-white mb-1">{product.name}</p>
-                  <p className="text-cyan-200 font-bold">
-                    Rp {product.priceSell.toLocaleString("id-ID")}
-                  </p>
-                </button>
-              ))}
-            </div>
+            hasMembershipProducts ? (
+              <Tabs defaultValue={generalProducts.length ? "general" : "membership"} className="gap-4">
+                <TabsList className="mb-4 bg-slate-900 border border-slate-800 text-slate-400">
+                  <TabsTrigger value="general">General</TabsTrigger>
+                  <TabsTrigger value="membership">Membership</TabsTrigger>
+                </TabsList>
+                <TabsContent value="general">
+                  <ProductGrid products={generalProducts} selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
+                </TabsContent>
+                <TabsContent value="membership">
+                  <ProductGrid products={membershipProducts} selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <ProductGrid products={products} selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
+            )
           ) : (
             <p className="text-slate-500">Produk tidak tersedia</p>
           )}
@@ -245,6 +246,48 @@ export default function GameDetail() {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+type ProductGridItem = {
+  id: number;
+  name: string;
+  priceSell: number;
+};
+
+function ProductGrid({
+  products,
+  selectedProduct,
+  onSelect,
+}: {
+  products: ProductGridItem[];
+  selectedProduct: number | null;
+  onSelect: (productId: number) => void;
+}) {
+  if (!products.length) {
+    return <p className="text-slate-500">Produk tidak tersedia</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {products.map((product) => (
+        <button
+          key={product.id}
+          onClick={() => onSelect(product.id)}
+          className={`angle-card text-left p-4 border hover-lift transition-all duration-200 ${
+            selectedProduct === product.id
+              ? "border-cyan-300 bg-cyan-300/15 shadow-lg shadow-cyan-500/10"
+              : "border-slate-700 bg-slate-950/70 hover:border-cyan-300/50"
+          }`}
+        >
+          <Sparkles className={`mb-2 h-4 w-4 ${selectedProduct === product.id ? "text-cyan-200" : "text-slate-600"}`} />
+          <p className="font-semibold text-white mb-1">{product.name}</p>
+          <p className="text-cyan-200 font-bold">
+            Rp {product.priceSell.toLocaleString("id-ID")}
+          </p>
+        </button>
+      ))}
     </div>
   );
 }

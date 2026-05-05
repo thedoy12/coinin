@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 
 type StatusTone = "success" | "failed" | "processing" | "pending";
+type ProductType = "general" | "membership";
 
 const emptyGameForm = {
   name: "",
@@ -46,6 +47,7 @@ const emptyProductForm = {
   gameId: "",
   name: "",
   providerCode: "",
+  productType: "general",
   priceModal: "",
   priceSell: "",
   isActive: true,
@@ -217,6 +219,7 @@ export default function AdminDashboard() {
         product.gameName,
         product.name,
         product.providerCode,
+        product.productType,
         product.gameSlug,
         product.isActive ? "aktif" : "nonaktif",
       ].some((value) => String(value ?? "").toLowerCase().includes(keyword))
@@ -280,6 +283,7 @@ export default function AdminDashboard() {
       gameId: Number(productForm.gameId),
       name: productForm.name,
       providerCode: productForm.providerCode,
+      productType: productForm.productType as ProductType,
       priceModal: Number(productForm.priceModal),
       priceSell: Number(productForm.priceSell),
       isActive: productForm.isActive,
@@ -580,6 +584,15 @@ export default function AdminDashboard() {
               </Field>
               <Field label="Nama Produk"><Input value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} className="bg-slate-950 border-slate-700 text-white" /></Field>
               <Field label="Provider Code"><Input value={productForm.providerCode} onChange={(e) => setProductForm({ ...productForm, providerCode: e.target.value })} className="bg-slate-950 border-slate-700 text-white" /></Field>
+              <Field label="Tipe Produk">
+                <Select value={productForm.productType} onValueChange={(value) => setProductForm({ ...productForm, productType: value })}>
+                  <SelectTrigger className="w-full bg-slate-950 border-slate-700 text-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="membership">Membership</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
               <Field label="Harga Modal"><Input type="number" value={productForm.priceModal} onChange={(e) => setProductForm({ ...productForm, priceModal: e.target.value })} className="bg-slate-950 border-slate-700 text-white" /></Field>
               <Field label="Harga Jual"><Input type="number" value={productForm.priceSell} onChange={(e) => setProductForm({ ...productForm, priceSell: e.target.value })} className="bg-slate-950 border-slate-700 text-white" /></Field>
               <div className="flex items-end gap-2">
@@ -767,6 +780,7 @@ type ProductRow = {
   gameName: string;
   name: string;
   providerCode: string;
+  productType: string;
   priceModal: number;
   priceSell: number;
   isActive: number;
@@ -854,10 +868,11 @@ function PayloadBlock({ title, value }: { title: string; value: string | null })
   );
 }
 
-function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input: { productId: number; priceModal?: number; priceSell?: number; providerCode?: string; isActive?: boolean }) => void }) {
+function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input: { productId: number; priceModal?: number; priceSell?: number; providerCode?: string; productType?: ProductType; isActive?: boolean }) => void }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState({
     providerCode: "",
+    productType: "general" as ProductType,
     priceModal: "",
     priceSell: "",
   });
@@ -866,6 +881,7 @@ function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input
     setEditingId(product.id);
     setDraft({
       providerCode: product.providerCode,
+      productType: normalizeProductType(product.productType),
       priceModal: product.priceModal.toString(),
       priceSell: product.priceSell.toString(),
     });
@@ -881,6 +897,7 @@ function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input
     onUpdate({
       productId: product.id,
       providerCode: draft.providerCode.trim(),
+      productType: draft.productType,
       priceModal,
       priceSell,
     });
@@ -895,6 +912,7 @@ function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input
             <TableHead className="text-slate-400">Game</TableHead>
             <TableHead className="text-slate-400">Produk</TableHead>
             <TableHead className="text-slate-400">Provider</TableHead>
+            <TableHead className="text-slate-400">Tipe</TableHead>
             <TableHead className="text-slate-400">Modal</TableHead>
             <TableHead className="text-slate-400">Jual</TableHead>
             <TableHead className="text-slate-400">Margin</TableHead>
@@ -910,6 +928,19 @@ function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input
                 {editingId === product.id ? (
                   <Input value={draft.providerCode} onChange={(event) => setDraft({ ...draft, providerCode: event.target.value })} className="h-8 min-w-28 bg-slate-950 border-slate-700 text-white" />
                 ) : product.providerCode}
+              </TableCell>
+              <TableCell>
+                {editingId === product.id ? (
+                  <Select value={draft.productType} onValueChange={(value) => setDraft({ ...draft, productType: value as ProductType })}>
+                    <SelectTrigger className="h-8 min-w-32 bg-slate-950 border-slate-700 text-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="membership">Membership</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge className="border-slate-700 bg-slate-950 text-slate-300 capitalize">{product.productType}</Badge>
+                )}
               </TableCell>
               <TableCell className="text-slate-300">
                 {editingId === product.id ? (
@@ -960,6 +991,10 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={`${toneClasses(statusToTone(status), "badge")} text-xs capitalize`}>{status}</Badge>;
 }
 
+function normalizeProductType(value: string): ProductType {
+  return value === "membership" ? "membership" : "general";
+}
+
 function statusToTone(status: string): StatusTone {
   if (status === "success" || status === "paid") return "success";
   if (status === "failed" || status === "expired") return "failed";
@@ -1004,6 +1039,7 @@ type ProductImportRow = {
   thumbnail?: string;
   instructions?: string;
   requiresZoneId?: boolean;
+  productType?: "general" | "membership";
 };
 
 async function parseProductImportFile(file: File): Promise<ProductImportRow[]> {
@@ -1028,6 +1064,7 @@ async function parseProductImportFile(file: File): Promise<ProductImportRow[]> {
     thumbnail: findHeaderIndex(headerCells, ["thumbnail", "thumbnail_url", "image", "image_url", "icon", "icon_url"]),
     instructions: findHeaderIndex(headerCells, ["instructions", "instruksi", "cara_order", "guide"]),
     requiresZoneId: findHeaderIndex(headerCells, ["requires_zone_id", "require_zone_id", "zone_id_required", "wajib_zone_id"]),
+    productType: findHeaderIndex(headerCells, ["product_type", "producttype", "type", "tipe", "jenis_produk"]),
   };
 
   if (indexes.code < 0 || indexes.name < 0 || indexes.hargaRupiah < 0) {
@@ -1047,8 +1084,17 @@ async function parseProductImportFile(file: File): Promise<ProductImportRow[]> {
       thumbnail: indexes.thumbnail >= 0 ? cells[indexes.thumbnail] : undefined,
       instructions: indexes.instructions >= 0 ? cells[indexes.instructions] : undefined,
       requiresZoneId: indexes.requiresZoneId >= 0 ? parseImportBoolean(cells[indexes.requiresZoneId]) : undefined,
+      productType: indexes.productType >= 0 ? parseProductType(cells[indexes.productType]) : undefined,
     }))
     .filter((row) => row.code && row.name && Number.isFinite(row.hargaRupiah) && row.hargaRupiah > 0);
+}
+
+function parseProductType(value: string | undefined): "general" | "membership" | undefined {
+  if (!value) return undefined;
+  const normalized = cleanCell(value).toLowerCase();
+  if (["membership", "member", "langganan"].includes(normalized)) return "membership";
+  if (["general", "umum", "topup", "top up"].includes(normalized)) return "general";
+  return undefined;
 }
 
 function normalizeHeader(value: string) {

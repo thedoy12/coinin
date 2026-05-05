@@ -9,6 +9,7 @@ const statements = [
   `ALTER TABLE "games" ADD COLUMN IF NOT EXISTS "isActive" integer DEFAULT 1 NOT NULL`,
   `ALTER TABLE "games" ADD COLUMN IF NOT EXISTS "updatedAt" timestamp DEFAULT now() NOT NULL`,
   `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "isActive" integer DEFAULT 1 NOT NULL`,
+  `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "productType" varchar(20) DEFAULT 'general' NOT NULL`,
   `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "updatedAt" timestamp DEFAULT now() NOT NULL`,
   `ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "customerName" varchar(255)`,
   `ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "customerEmail" varchar(320)`,
@@ -33,6 +34,14 @@ const statements = [
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "users_username_unique" ON "users" ("username")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "products_game_provider_unique" ON "products" ("gameId", "providerCode")`,
+  `DO $$
+  BEGIN
+    ALTER TABLE "products"
+      ADD CONSTRAINT "products_productType_check"
+      CHECK ("productType" IN ('general', 'membership'));
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+  END $$`,
   `CREATE INDEX IF NOT EXISTS "audit_entity_idx" ON "audit_logs" ("entityType", "entityId")`,
   `CREATE INDEX IF NOT EXISTS "audit_actor_idx" ON "audit_logs" ("actorUserId")`,
 ];

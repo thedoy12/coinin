@@ -13,7 +13,7 @@ export const productRouter = createRouter({
         .select()
         .from(products)
         .where(and(eq(products.gameId, input.gameId), eq(products.isActive, 1)))
-        .orderBy(products.priceSell);
+        .orderBy(products.productType, products.priceSell);
     }),
 
   byGameSlug: publicQuery
@@ -32,7 +32,7 @@ export const productRouter = createRouter({
         .select()
         .from(products)
         .where(and(eq(products.gameId, gameResult[0].id), eq(products.isActive, 1)))
-        .orderBy(products.priceSell);
+        .orderBy(products.productType, products.priceSell);
     }),
 
   byId: publicQuery

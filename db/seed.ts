@@ -54,6 +54,7 @@ async function seed() {
         gameId: game.id,
         providerCode: `${template.providerCode}_G${game.id}`,
         name: template.name,
+        productType: "general",
         priceModal: template.priceModal,
         priceSell: markup(template.priceModal),
       });

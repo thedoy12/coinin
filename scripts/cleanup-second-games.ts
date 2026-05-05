@@ -49,6 +49,7 @@ async function main() {
           .update(products)
           .set({
             name: cleanServiceName(product.name),
+            productType: product.productType,
             priceModal: product.priceModal,
             priceSell: product.priceSell,
             isActive: product.isActive,
@@ -66,6 +67,7 @@ async function main() {
           .set({
             gameId: target.id,
             name: cleanServiceName(product.name),
+            productType: product.productType,
             updatedAt: new Date(),
           })
           .where(eq(products.id, product.id));

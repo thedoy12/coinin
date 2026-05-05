@@ -60,6 +60,7 @@ export const products = pgTable(
       .references(() => games.id, { onDelete: "cascade" }),
     providerCode: varchar("providerCode", { length: 100 }).notNull(),
     name: varchar("name", { length: 255 }).notNull(),
+    productType: varchar("productType", { length: 20 }).default("general").notNull(),
     priceModal: integer("priceModal").notNull(),
     priceSell: integer("priceSell").notNull(),
     isActive: integer("isActive").default(1).notNull(),
