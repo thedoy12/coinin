@@ -1,6 +1,38 @@
 import { sql } from "drizzle-orm";
 import { games, products } from "@db/schema";
 
+export const publicCatalogSlugs = [
+  "asphalt-9",
+  "au2-mobile",
+  "call-of-duty-mobile",
+  "crystal-of-atlan",
+  "delta-force",
+  "draconia-saga",
+  "dragon-raja-sea",
+  "eggy-party",
+  "era-of-celestial",
+  "eternal-city",
+  "farlight-84",
+  "fc-mobile",
+  "football-master-2",
+  "free-fire",
+  "genshin-impact",
+  "honor-of-kings",
+  "mobile-legends",
+  "point-blank-via-id",
+  "revelation-infinite-journey",
+  "undawn",
+  "pln",
+  "token-pln",
+  "pulsa-axis",
+  "pulsa-by-u",
+  "pulsa-indosat",
+  "pulsa-smartfren",
+  "pulsa-telkomsel",
+  "pulsa-tri",
+  "pulsa-xl",
+] as const;
+
 const sensitiveCatalogTerms = [
   "judi",
   "slot",
@@ -29,6 +61,8 @@ const sensitiveCatalogTerms = [
   "usdt",
   "trading",
   "forex",
+  "bigo",
+  "live",
 ];
 
 export const sensitiveCatalogPattern = sensitiveCatalogTerms

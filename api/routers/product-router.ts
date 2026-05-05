@@ -2,8 +2,8 @@ import { z } from "zod";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { products, games } from "@db/schema";
-import { and, eq, getTableColumns } from "drizzle-orm";
-import { publicSafeGameFilter, publicSafeProductFilter } from "../lib/catalog-safety";
+import { and, eq, getTableColumns, inArray } from "drizzle-orm";
+import { publicCatalogSlugs, publicSafeGameFilter, publicSafeProductFilter } from "../lib/catalog-safety";
 
 const productColumns = getTableColumns(products);
 
@@ -20,6 +20,7 @@ export const productRouter = createRouter({
           eq(products.gameId, input.gameId),
           eq(products.isActive, 1),
           eq(games.isActive, 1),
+          inArray(games.slug, publicCatalogSlugs),
           publicSafeGameFilter(),
           publicSafeProductFilter(),
         ))
@@ -35,7 +36,7 @@ export const productRouter = createRouter({
           id: games.id,
         })
         .from(games)
-        .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), publicSafeGameFilter()))
+        .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
         .limit(1);
 
       if (!gameResult[0]) return [];
@@ -59,6 +60,7 @@ export const productRouter = createRouter({
           eq(products.id, input.id),
           eq(products.isActive, 1),
           eq(games.isActive, 1),
+          inArray(games.slug, publicCatalogSlugs),
           publicSafeGameFilter(),
           publicSafeProductFilter(),
         ))

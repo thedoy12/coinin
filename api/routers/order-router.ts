@@ -2,10 +2,10 @@ import { z } from "zod";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { transactions, products, games } from "@db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
-import { publicSafeGameFilter, publicSafeProductFilter } from "../lib/catalog-safety";
+import { publicCatalogSlugs, publicSafeGameFilter, publicSafeProductFilter } from "../lib/catalog-safety";
 
 const referenceIdInput = z.string().trim().regex(/^TRX-[A-Z0-9_-]{8,32}$/);
 
@@ -29,6 +29,7 @@ export const orderRouter = createRouter({
           eq(products.id, input.productId),
           eq(products.isActive, 1),
           eq(games.isActive, 1),
+          inArray(games.slug, publicCatalogSlugs),
           publicSafeGameFilter(),
           publicSafeProductFilter(),
         ))
