@@ -1,8 +1,8 @@
 import { Mail, MessageCircle, ShieldCheck, Store, FileText, Headphones } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
-const supportEmail = "support@coinin.id";
-const supportWhatsapp = "+62 812-0000-0000";
+const supportEmail = "putradadoy@gmail.com";
+const supportWhatsapp = "+62 895-3930-6153-6";
 
 export function AboutPage() {
   useSEO({
