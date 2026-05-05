@@ -1,5 +1,5 @@
-import { sql } from "drizzle-orm";
-import { games, products } from "../db/schema";
+import { and, inArray, notInArray, sql } from "drizzle-orm";
+import { games, products, transactions } from "../db/schema";
 import { markup } from "../api/lib/markup";
 import { getTopupServices } from "../api/lib/topup";
 import { getDb } from "../api/queries/connection";
@@ -30,6 +30,8 @@ type NormalizedService = {
 
 const shouldApply = process.argv.includes("--apply");
 const onlyActive = !process.argv.includes("--include-inactive");
+const shouldPrune = !process.argv.includes("--no-prune");
+const maxGameCatalogSize = 50;
 
 async function main() {
   console.log(`Sync HataMarket products (${shouldApply ? "apply" : "dry-run"})...`);
@@ -39,12 +41,16 @@ async function main() {
     throw new Error(response.error || "Failed to fetch HataMarket services");
   }
 
-  const rows = extractServices(response.data)
+  const services = extractServices(response.data)
     .map(normalizeService)
     .filter((service) => (onlyActive ? service.isActive === 1 : true));
+  const rows = filterCatalogRows(services);
 
-  const uniqueGames = new Set(rows.map((row) => row.gameSlug));
-  console.log(`Fetched ${rows.length} services from ${uniqueGames.size} games`);
+  const uniqueGames = new Set(rows.filter(isGameCatalogService).map((row) => row.gameSlug));
+  const utilityGroups = new Set(rows.filter(isAllowedUtilityService).map((row) => row.gameSlug));
+  console.log(
+    `Fetched ${services.length} services. Keeping ${rows.length} services from ${uniqueGames.size} games and ${utilityGroups.size} utility groups.`
+  );
 
   if (!shouldApply) {
     console.log("Dry-run only. Run with --apply to write to database.");
@@ -138,6 +144,23 @@ async function main() {
   }
 
   const productKeys = productValues.map((product) => `${product.gameId}:${product.providerCode}`);
+  let productsDeleted = 0;
+  let productsDeactivated = 0;
+  let gamesDeleted = 0;
+  let gamesDeactivated = 0;
+
+  if (shouldPrune) {
+    const pruneResult = await pruneCatalog(
+      db,
+      productValues.map((product) => `${product.gameId}:${product.providerCode}`),
+      Array.from(uniqueRowsByGame.keys())
+    );
+    productsDeleted = pruneResult.productsDeleted;
+    productsDeactivated = pruneResult.productsDeactivated;
+    gamesDeleted = pruneResult.gamesDeleted;
+    gamesDeactivated = pruneResult.gamesDeactivated;
+  }
+
   const gamesCreated = Array.from(uniqueRowsByGame.keys()).filter((slug) => !existingGameSlugs.has(slug)).length;
   const productsCreated = productKeys.filter((key) => !existingProductKeys.has(key)).length;
   const productsUpdated = productKeys.length - productsCreated;
@@ -147,8 +170,75 @@ async function main() {
     gamesCreated,
     productsCreated,
     productsUpdated,
+    productsDeleted,
+    productsDeactivated,
+    gamesDeleted,
+    gamesDeactivated,
     totalServices: rows.length,
   });
+}
+
+async function pruneCatalog(
+  db: ReturnType<typeof getDb>,
+  allowedProductKeys: string[],
+  allowedGameSlugs: string[]
+) {
+  const productRows = await db.select().from(products);
+  const transactionRows = await db
+    .select({
+      productId: transactions.productId,
+      gameId: transactions.gameId,
+    })
+    .from(transactions);
+  const referencedProductIds = new Set(transactionRows.map((row) => row.productId));
+  const referencedGameIds = new Set(transactionRows.map((row) => row.gameId));
+  const allowedProducts = new Set(allowedProductKeys);
+  const staleProductIds = productRows
+    .filter((product) => !allowedProducts.has(`${product.gameId}:${product.providerCode}`))
+    .map((product) => product.id);
+  const staleReferencedProductIds = staleProductIds.filter((id) => referencedProductIds.has(id));
+  const staleUnreferencedProductIds = staleProductIds.filter((id) => !referencedProductIds.has(id));
+
+  if (staleReferencedProductIds.length > 0) {
+    await db
+      .update(products)
+      .set({ isActive: 0, updatedAt: new Date() })
+      .where(inArray(products.id, staleReferencedProductIds));
+  }
+  if (staleUnreferencedProductIds.length > 0) {
+    await db.delete(products).where(inArray(products.id, staleUnreferencedProductIds));
+  }
+
+  const gameRows = await db.select().from(games);
+  const staleGameIds = gameRows
+    .filter((game) => !allowedGameSlugs.includes(game.slug))
+    .map((game) => game.id);
+  const staleReferencedGameIds = staleGameIds.filter((id) => referencedGameIds.has(id));
+  const staleUnreferencedGameIds = staleGameIds.filter((id) => !referencedGameIds.has(id));
+
+  if (staleReferencedGameIds.length > 0) {
+    await db
+      .update(games)
+      .set({ isActive: 0, updatedAt: new Date() })
+      .where(inArray(games.id, staleReferencedGameIds));
+  }
+  if (staleUnreferencedGameIds.length > 0) {
+    await db.delete(games).where(inArray(games.id, staleUnreferencedGameIds));
+  }
+
+  if (allowedGameSlugs.length > 0) {
+    await db
+      .update(games)
+      .set({ isActive: 0, updatedAt: new Date() })
+      .where(and(sql`${games.isActive} = 1`, notInArray(games.slug, allowedGameSlugs)));
+  }
+
+  return {
+    productsDeleted: staleUnreferencedProductIds.length,
+    productsDeactivated: staleReferencedProductIds.length,
+    gamesDeleted: staleUnreferencedGameIds.length,
+    gamesDeactivated: staleReferencedGameIds.length,
+  };
 }
 
 function chunks<T>(items: T[], size: number): T[][] {
@@ -207,6 +297,74 @@ function normalizeService(row: HataMarketService): NormalizedService {
     isActive: row.status.toLowerCase() === "aktif" ? 1 : 0,
     requiresZoneId: requiresZoneId(gameName) ? 1 : 0,
   };
+}
+
+function filterCatalogRows(rows: NormalizedService[]) {
+  const selectedGameSlugs = selectGameSlugs(rows);
+  return rows.filter(
+    (row) =>
+      !isSensitiveCatalogService(row) &&
+      (selectedGameSlugs.has(row.gameSlug) || isAllowedUtilityService(row))
+  );
+}
+
+function selectGameSlugs(rows: NormalizedService[]) {
+  const selectedSlugs: string[] = [];
+  const availableGameSlugs = new Set<string>();
+  const requiredGameSlugs = new Set<string>();
+
+  for (const row of rows) {
+    if (!isGameCatalogService(row)) continue;
+    availableGameSlugs.add(row.gameSlug);
+    if (isRequiredGame(row.gameName)) {
+      requiredGameSlugs.add(row.gameSlug);
+    }
+    if (!selectedSlugs.includes(row.gameSlug) && selectedSlugs.length < maxGameCatalogSize) {
+      selectedSlugs.push(row.gameSlug);
+    }
+  }
+
+  for (const slug of requiredGameSlugs) {
+    if (selectedSlugs.includes(slug)) continue;
+    if (selectedSlugs.length >= maxGameCatalogSize) {
+      selectedSlugs.pop();
+    }
+    selectedSlugs.push(slug);
+  }
+
+  return new Set(selectedSlugs.filter((slug) => availableGameSlugs.has(slug)));
+}
+
+function isRequiredGame(gameName: string) {
+  return /point\s*blank|pointblank/i.test(gameName);
+}
+
+function isGameCatalogService(row: NormalizedService) {
+  return !isSensitiveCatalogService(row) && !isAllowedUtilityService(row) && isKnownGameService(row);
+}
+
+function isAllowedUtilityService(row: NormalizedService) {
+  return isPulsaService(row.gameName, row.productName) || isPlnService(row.gameName);
+}
+
+function isPulsaService(gameName: string, productName: string) {
+  const text = `${gameName} ${productName}`;
+  if (/paket data|\bdata\b|internet|kuota/i.test(text)) return false;
+  return /pulsa|telkomsel|indosat|im3|xl|axis|tri|three|smartfren|by\.?u/i.test(text);
+}
+
+function isKnownGameService(row: NormalizedService) {
+  if (row.category === "Voucher" || row.category === "Digital") return false;
+  const text = `${row.gameName} ${row.productName}`.toLowerCase();
+  if (/hbo|iqiyi|indomaret|razer\s*gold|spotify|netflix|vidio|viu|google\s*play|steam|voucher/.test(text)) {
+    return false;
+  }
+  return true;
+}
+
+function isSensitiveCatalogService(row: NormalizedService) {
+  const text = `${row.gameName} ${row.gameSlug} ${row.productName} ${row.providerCode}`.toLowerCase();
+  return /judi|slot|casino|poker|togel|\bbet\b|betting|domino|gaple|capsa|qiu|\bqq\b|8\s*ball|billiard|sex|sexy|porn|porno|dewasa|crypto|kripto|bitcoin|binance|usdt|trading|forex/.test(text);
 }
 
 function inferProductType(row: HataMarketService): "general" | "membership" {
