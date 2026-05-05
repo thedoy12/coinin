@@ -223,7 +223,6 @@ function markup(price: number) {
 
 MIT
 
-Username: admin
-Email: admin@coinin.local
-Password: Admin@CoinIn2026
+Username/email: admin
+Password: C0inIn!9Qm7Zp2Va6
 Role: admin
