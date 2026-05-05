@@ -52,6 +52,14 @@ ${urls.map((url) => `  <url><loc>${url.loc}</loc><priority>${url.priority}</prio
 });
 
 // Payment callback endpoint (HTTP, not tRPC)
+app.get("/api/callback", (c) =>
+  c.json({
+    ok: true,
+    endpoint: "CoinIn payment callback",
+    method: "POST",
+  })
+);
+
 app.post("/api/callback", async (c) => {
   try {
     const rawBody = await c.req.text();
