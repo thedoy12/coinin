@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Gamepad2, User, Hash, ShoppingCart, Sparkles, Coins } from "lucide-react";
@@ -17,6 +16,7 @@ export default function GameDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+  const [activeProductTab, setActiveProductTab] = useState<ProductTabValue>("general");
   const [userId, setUserId] = useState("");
   const [zoneId, setZoneId] = useState("");
 
@@ -95,9 +95,22 @@ export default function GameDetail() {
   }
 
   const targetCopy = getTargetCopy(game.name, game.category);
-  const generalProducts = products?.filter((product) => product.productType !== "membership") ?? [];
+  const indonesiaProducts = products?.filter((product) =>
+    product.productType !== "membership" && /\bindonesia\b/i.test(product.name)
+  ) ?? [];
+  const generalProducts = products?.filter((product) =>
+    product.productType !== "membership" && !/\bindonesia\b/i.test(product.name)
+  ) ?? [];
   const membershipProducts = products?.filter((product) => product.productType === "membership") ?? [];
-  const hasMembershipProducts = membershipProducts.length > 0;
+  const productTabs = [
+    { value: "general" as const, label: "General", products: generalProducts },
+    { value: "indonesia" as const, label: "Indonesia", products: indonesiaProducts },
+    { value: "membership" as const, label: "Membership", products: membershipProducts },
+  ].filter((tab) => tab.products.length > 0);
+  const visibleProductTab = productTabs.some((tab) => tab.value === activeProductTab)
+    ? activeProductTab
+    : productTabs[0]?.value ?? "general";
+  const visibleProducts = productTabs.find((tab) => tab.value === visibleProductTab)?.products ?? products ?? [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -146,22 +159,27 @@ export default function GameDetail() {
               ))}
             </div>
           ) : products && products.length > 0 ? (
-            hasMembershipProducts ? (
-              <Tabs defaultValue={generalProducts.length ? "general" : "membership"} className="gap-4">
-                <TabsList className="mb-4 bg-slate-900 border border-slate-800 text-slate-400">
-                  <TabsTrigger value="general">General</TabsTrigger>
-                  <TabsTrigger value="membership">Membership</TabsTrigger>
-                </TabsList>
-                <TabsContent value="general">
-                  <ProductGrid products={generalProducts} selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
-                </TabsContent>
-                <TabsContent value="membership">
-                  <ProductGrid products={membershipProducts} selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <ProductGrid products={products} selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
-            )
+            <div className="space-y-5">
+              {productTabs.length > 1 && (
+                <div className="flex flex-wrap justify-center gap-3 rounded-none border border-cyan-300/10 bg-[#102f57]/80 px-4 py-5 sm:gap-4 sm:px-6">
+                  {productTabs.map((tab) => (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => setActiveProductTab(tab.value)}
+                      className={`min-h-12 min-w-36 rounded-full px-7 text-sm font-black transition-colors sm:min-w-44 sm:text-base ${
+                        visibleProductTab === tab.value
+                          ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                          : "bg-slate-200 text-slate-950 hover:bg-white"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <ProductGrid products={visibleProducts} selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
+            </div>
           ) : (
             <p className="text-slate-500">Produk tidak tersedia</p>
           )}
@@ -255,6 +273,8 @@ type ProductGridItem = {
   name: string;
   priceSell: number;
 };
+
+type ProductTabValue = "general" | "indonesia" | "membership";
 
 function ProductGrid({
   products,
