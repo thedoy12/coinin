@@ -35,6 +35,10 @@ app.get("/sitemap.xml", async (c) => {
   const urls = [
     { loc: `${env.appUrl}/`, priority: "1.0" },
     { loc: `${env.appUrl}/status`, priority: "0.6" },
+    { loc: `${env.appUrl}/tentang-kami`, priority: "0.5" },
+    { loc: `${env.appUrl}/kontak`, priority: "0.5" },
+    { loc: `${env.appUrl}/kebijakan-privasi`, priority: "0.4" },
+    { loc: `${env.appUrl}/ketentuan-layanan`, priority: "0.4" },
     ...activeGames.map((game) => ({
       loc: `${env.appUrl}/game/${game.slug}`,
       priority: "0.8",

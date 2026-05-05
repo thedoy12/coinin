@@ -9,6 +9,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import GameThumbnails from './pages/GameThumbnails'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import { AboutPage, ContactPage, PrivacyPolicyPage, TermsPage } from './pages/InfoPages'
 
 export default function App() {
   return (
@@ -20,6 +21,10 @@ export default function App() {
         <Route path="/checkout/:referenceId" element={<Checkout />} />
         <Route path="/status" element={<Status />} />
         <Route path="/status/:referenceId" element={<Status />} />
+        <Route path="/tentang-kami" element={<AboutPage />} />
+        <Route path="/kontak" element={<ContactPage />} />
+        <Route path="/kebijakan-privasi" element={<PrivacyPolicyPage />} />
+        <Route path="/ketentuan-layanan" element={<TermsPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/thumbnails" element={<GameThumbnails />} />
       </Route>

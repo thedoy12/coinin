@@ -2,6 +2,7 @@ import { Link, Outlet } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Gamepad2, ImageUp, User, LogOut, Shield, Search, Radio } from "lucide-react";
+import { legalLinks } from "@/pages/InfoPages";
 
 export default function Layout() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -96,19 +97,29 @@ export default function Layout() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-cyan-300/15 bg-slate-950/70 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="angle-card bg-cyan-300 p-1.5">
-                <Radio className="w-4 h-4 text-slate-950" />
+          <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-start">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="angle-card bg-cyan-300 p-1.5">
+                  <Radio className="w-4 h-4 text-slate-950" />
+                </div>
+                <span className="font-black uppercase italic text-slate-200">CoinIn</span>
               </div>
-              <span className="font-black uppercase italic text-slate-200">CoinIn</span>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
+                Platform top up game dan produk digital dengan pembayaran online, status transaksi real-time, dan support pelanggan.
+              </p>
             </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              QRIS // VA // E-Wallet // Status Real-Time
-            </p>
-            <p className="text-sm text-slate-600">
-              &copy; {new Date().getFullYear()} CoinIn. All rights reserved.
-            </p>
+            <div className="grid gap-2 text-sm md:text-right">
+              {legalLinks.map((link) => (
+                <Link key={link.to} to={link.to} className="text-slate-400 hover:text-cyan-100">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="mt-6 flex flex-col gap-2 border-t border-cyan-300/10 pt-5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-semibold uppercase tracking-[0.18em]">QRIS // VA // E-Wallet // Status Real-Time</p>
+            <p>&copy; {new Date().getFullYear()} CoinIn. All rights reserved.</p>
           </div>
         </div>
       </footer>
