@@ -32,7 +32,7 @@ type NormalizedService = {
 const shouldApply = process.argv.includes("--apply");
 const onlyActive = !process.argv.includes("--include-inactive");
 const shouldPrune = !process.argv.includes("--no-prune");
-const maxGameCatalogSize = 20;
+const maxGameCatalogSize = 35;
 
 async function main() {
   console.log(`Sync HataMarket products (${shouldApply ? "apply" : "dry-run"})...`);
