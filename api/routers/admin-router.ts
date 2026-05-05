@@ -2,9 +2,10 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
-import { auditLogs, transactions, games, products, providerApiLogs } from "@db/schema";
+import { auditLogs, transactions, games, products, providerApiLogs, users } from "@db/schema";
 import { and, desc, eq, sql, count } from "drizzle-orm";
 import { writeAuditLog } from "../lib/audit";
+import { hashPassword } from "../lib/password";
 import {
   expireOldTransactions,
   fulfillPaidTransaction,
@@ -14,6 +15,7 @@ import {
 
 const transactionStatus = z.enum(["pending", "processing", "success", "failed"]);
 const productType = z.enum(["general", "membership"]);
+const userRole = z.enum(["user", "admin"]);
 const gameInput = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(255),
@@ -128,6 +130,25 @@ export const adminRouter = createRouter({
   games: adminQuery.query(async () => {
     const db = getDb();
     return db.select().from(games).orderBy(games.name);
+  }),
+
+  users: adminQuery.query(async () => {
+    const db = getDb();
+    return db
+      .select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        email: users.email,
+        authProvider: users.authProvider,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        lastSignInAt: users.lastSignInAt,
+      })
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(500);
   }),
 
   customers: adminQuery.query(async () => {
@@ -284,6 +305,70 @@ export const adminRouter = createRouter({
     });
     return { success: true, count: results.length, results };
   }),
+
+  updateUserRole: adminQuery
+    .input(z.object({ userId: z.number().int().positive(), role: userRole }))
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const before = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!before[0]) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Akun tidak ditemukan" });
+      }
+      const adminCount = await db
+        .select({ count: count() })
+        .from(users)
+        .where(eq(users.role, "admin"));
+      if (before[0].role === "admin" && input.role !== "admin" && adminCount[0].count <= 1) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Tidak bisa menurunkan role admin terakhir",
+        });
+      }
+
+      const update = { role: input.role, updatedAt: new Date() };
+      await db.update(users).set(update).where(eq(users.id, input.userId));
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        action: "user.update_role",
+        entityType: "user",
+        entityId: input.userId.toString(),
+        before: { id: before[0].id, role: before[0].role },
+        after: update,
+      });
+      return { success: true };
+    }),
+
+  resetUserPassword: adminQuery
+    .input(
+      z.object({
+        userId: z.number().int().positive(),
+        password: z.string().min(8).max(100),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const before = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!before[0]) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Akun tidak ditemukan" });
+      }
+      await db
+        .update(users)
+        .set({
+          passwordHash: hashPassword(input.password),
+          authProvider: "local",
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, input.userId));
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        action: "user.reset_password",
+        entityType: "user",
+        entityId: input.userId.toString(),
+        before: { id: before[0].id, username: before[0].username, email: before[0].email },
+        after: { passwordReset: true },
+      });
+      return { success: true };
+    }),
 
   updateProduct: adminQuery
     .input(

@@ -83,6 +83,7 @@ export default function AdminDashboard() {
   const statsQuery = trpc.admin.stats.useQuery(undefined, { enabled });
   const transactionsQuery = trpc.admin.allTransactions.useQuery(undefined, { enabled });
   const customersQuery = trpc.admin.customers.useQuery(undefined, { enabled });
+  const usersQuery = trpc.admin.users.useQuery(undefined, { enabled });
   const catalogQuery = trpc.admin.catalog.useQuery(undefined, { enabled });
   const gamesQuery = trpc.admin.games.useQuery(undefined, { enabled });
   const auditQuery = trpc.admin.auditLogs.useQuery(undefined, { enabled });
@@ -92,6 +93,7 @@ export default function AdminDashboard() {
     statsQuery.refetch();
     transactionsQuery.refetch();
     customersQuery.refetch();
+    usersQuery.refetch();
     catalogQuery.refetch();
     gamesQuery.refetch();
     auditQuery.refetch();
@@ -133,6 +135,22 @@ export default function AdminDashboard() {
   const syncTopups = trpc.admin.syncTopups.useMutation({
     onSuccess: (result) => {
       toast.success(`${result.count} top-up processing disinkronkan`);
+      refreshAll();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const updateUserRole = trpc.admin.updateUserRole.useMutation({
+    onSuccess: () => {
+      toast.success("Role akun diperbarui");
+      refreshAll();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const resetUserPassword = trpc.admin.resetUserPassword.useMutation({
+    onSuccess: () => {
+      toast.success("Password akun berhasil direset");
       refreshAll();
     },
     onError: (error) => toast.error(error.message),
@@ -190,8 +208,9 @@ export default function AdminDashboard() {
       unpaid: txs.filter((tx) => tx.paymentStatus === "unpaid").length,
       failedTopup: txs.filter((tx) => tx.topupStatus === "failed").length,
       customers: customersQuery.data?.length ?? 0,
+      accounts: usersQuery.data?.length ?? 0,
     };
-  }, [customersQuery.data, transactionsQuery.data]);
+  }, [customersQuery.data, transactionsQuery.data, usersQuery.data]);
 
   const filteredTransactions = useMemo(() => {
     const keyword = transactionSearch.trim().toLowerCase();
@@ -269,6 +288,7 @@ export default function AdminDashboard() {
   const stats = statsQuery.data;
   const transactions = transactionsQuery.data ?? [];
   const customers = customersQuery.data ?? [];
+  const accounts = usersQuery.data ?? [];
   const catalog = catalogQuery.data ?? [];
   const games = gamesQuery.data ?? [];
   const auditLogs = auditQuery.data ?? [];
@@ -374,6 +394,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">Transaksi</TabsTrigger>
           <TabsTrigger value="customers">Pembeli</TabsTrigger>
+          <TabsTrigger value="accounts">Akun</TabsTrigger>
           <TabsTrigger value="games">Game</TabsTrigger>
           <TabsTrigger value="products">Produk</TabsTrigger>
           <TabsTrigger value="api-logs">API Log</TabsTrigger>
@@ -386,6 +407,7 @@ export default function AdminDashboard() {
             <MetricCard title="Estimasi Profit" value={rupiah(stats?.totalProfit ?? 0)} icon={<Wallet />} tone="processing" />
             <MetricCard title="Total Transaksi" value={(stats?.totalTransactions ?? 0).toString()} icon={<Package />} tone="pending" />
             <MetricCard title="Pembeli Tercatat" value={totals.customers.toString()} icon={<Users />} tone="processing" />
+            <MetricCard title="Akun Terdaftar" value={totals.accounts.toString()} icon={<Users />} tone="success" />
             <MetricCard title="Paid Orders" value={(stats?.paidTransactions ?? 0).toString()} icon={<Package />} tone="success" />
             <MetricCard title="Unpaid Orders" value={totals.unpaid.toString()} icon={<Clock />} tone="pending" />
             <MetricCard title="Top-up Failed" value={totals.failedTopup.toString()} icon={<RotateCcw />} tone="failed" />
@@ -462,6 +484,25 @@ export default function AdminDashboard() {
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="accounts">
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-white">Akun Terdaftar</CardTitle>
+              <Button size="sm" variant="outline" className="border-slate-700 text-slate-300" onClick={() => downloadCsv("accounts.csv", accounts)}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <UserTable
+                rows={accounts}
+                onRole={(userId, role) => updateUserRole.mutate({ userId, role })}
+                onResetPassword={(userId, password) => resetUserPassword.mutate({ userId, password })}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -786,6 +827,18 @@ type ProductRow = {
   isActive: number;
 };
 
+type UserRow = {
+  id: number;
+  username: string | null;
+  name: string | null;
+  email: string | null;
+  authProvider: string;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
+  lastSignInAt: Date;
+};
+
 type ProviderApiLogRow = {
   id: number;
   provider: string;
@@ -848,6 +901,104 @@ function ProviderApiLogTable({ rows }: { rows: ProviderApiLogRow[] }) {
             <TableRow>
               <TableCell colSpan={6} className="text-center text-slate-500 py-8">
                 Belum ada log API provider. Log akan muncul setelah order paid dikirim ke Apigames.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function UserTable({
+  rows,
+  onRole,
+  onResetPassword,
+}: {
+  rows: UserRow[];
+  onRole: (userId: number, role: "user" | "admin") => void;
+  onResetPassword: (userId: number, password: string) => void;
+}) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [password, setPassword] = useState("");
+
+  const submitPassword = (userId: number) => {
+    if (password.length < 8) {
+      toast.error("Password minimal 8 karakter");
+      return;
+    }
+    onResetPassword(userId, password);
+    setEditingId(null);
+    setPassword("");
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow className="border-slate-800 hover:bg-transparent">
+            <TableHead className="text-slate-400">Akun</TableHead>
+            <TableHead className="text-slate-400">Email</TableHead>
+            <TableHead className="text-slate-400">Provider</TableHead>
+            <TableHead className="text-slate-400">Role</TableHead>
+            <TableHead className="text-slate-400">Daftar</TableHead>
+            <TableHead className="text-slate-400">Login Terakhir</TableHead>
+            <TableHead className="text-slate-400">Reset Password</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((account) => (
+            <TableRow key={account.id} className="border-slate-800 align-top">
+              <TableCell>
+                <p className="font-bold text-white">{account.name || account.username || `User #${account.id}`}</p>
+                <p className="text-xs text-slate-500">{account.username || "-"}</p>
+              </TableCell>
+              <TableCell className="text-slate-300">{account.email || "-"}</TableCell>
+              <TableCell>
+                <Badge className="border-slate-700 bg-slate-950 text-slate-300">{account.authProvider}</Badge>
+              </TableCell>
+              <TableCell>
+                <Select value={account.role} onValueChange={(value) => onRole(account.id, value as "user" | "admin")}>
+                  <SelectTrigger className="h-8 min-w-28 bg-slate-950 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell className="text-sm text-slate-400">{formatDate(account.createdAt)}</TableCell>
+              <TableCell className="text-sm text-slate-400">{formatDate(account.lastSignInAt)}</TableCell>
+              <TableCell className="min-w-72">
+                {editingId === account.id ? (
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Password baru"
+                      className="h-8 bg-slate-950 border-slate-700 text-white"
+                    />
+                    <Button size="sm" className="h-8 bg-cyan-300 font-bold text-slate-950 hover:bg-cyan-200" onClick={() => submitPassword(account.id)}>
+                      Simpan
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-slate-400" onClick={() => { setEditingId(null); setPassword(""); }}>
+                      Batal
+                    </Button>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="ghost" className="h-8 text-amber-400" onClick={() => setEditingId(account.id)}>
+                    Reset
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+          {!rows.length && (
+            <TableRow>
+              <TableCell colSpan={7} className="py-8 text-center text-slate-500">
+                Belum ada akun terdaftar
               </TableCell>
             </TableRow>
           )}
