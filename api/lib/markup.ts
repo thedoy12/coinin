@@ -5,18 +5,16 @@ export function markup(price: number, category: MarkupCategory = "game"): number
 }
 
 function markupGame(price: number) {
-  if (price <= 5000) return roundToHundred(price + 400);
-  if (price <= 20000) return roundToHundred(price + 900);
-  if (price <= 50000) return roundToHundred(price + 1500);
-  if (price <= 100000) return roundToHundred(price + 2200);
-  return roundToHundred(price + 3000);
+  return applyPercentageMarkup(price, 0.04, 400, 3000);
 }
 
 function markupDigital(price: number) {
-  if (price <= 10000) return roundToHundred(price + 300);
-  if (price <= 50000) return roundToHundred(price + 700);
-  if (price <= 100000) return roundToHundred(price + 1200);
-  return roundToHundred(price + 1800);
+  return applyPercentageMarkup(price, 0.025, 300, 1800);
+}
+
+function applyPercentageMarkup(price: number, percentage: number, minimum: number, maximum: number) {
+  const margin = Math.min(Math.max(price * percentage, minimum), maximum);
+  return roundToHundred(price + margin);
 }
 
 function roundToHundred(value: number) {
