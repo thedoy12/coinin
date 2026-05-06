@@ -1,4 +1,6 @@
 import axios from "axios";
+import http from "node:http";
+import https from "node:https";
 import { createHash } from "node:crypto";
 import { env } from "./env";
 import { writeProviderApiLog } from "./provider-api-log";
@@ -8,6 +10,8 @@ const topupApi = axios.create({
   headers: {
     "Content-Type": "application/x-www-form-urlencoded",
   },
+  httpAgent: new http.Agent({ family: 4 }),
+  httpsAgent: new https.Agent({ family: 4 }),
   timeout: 20_000,
 });
 
