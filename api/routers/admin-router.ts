@@ -18,6 +18,7 @@ import {
   syncProcessingTopups,
   syncPaymentAndFulfill,
 } from "../lib/transaction";
+import { syncCatalogFromDigiflazz } from "../lib/catalog-sync";
 
 const transactionStatus = z.enum(["pending", "processing", "success", "failed"]);
 const productType = z.enum(["general", "membership"]);
@@ -326,6 +327,18 @@ export const adminRouter = createRouter({
       after: results,
     });
     return { success: true, count: results.length, results };
+  }),
+
+  syncCatalog: adminQuery.mutation(async ({ ctx }) => {
+    const result = await syncCatalogFromDigiflazz({ apply: true, onlyActive: true, prune: true });
+    await writeAuditLog({
+      actorUserId: ctx.user.id,
+      action: "catalog.sync_provider",
+      entityType: "catalog",
+      entityId: "digiflazz",
+      after: result,
+    });
+    return { success: true, ...result };
   }),
 
   updateUserRole: adminQuery

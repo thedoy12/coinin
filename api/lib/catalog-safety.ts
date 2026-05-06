@@ -20,21 +20,21 @@ export const publicCatalogSlugs = [
 ] as const;
 
 export const publicCatalogThumbnails: Record<string, string> = {
-  "free-fire": "https://hatamarket.com/public/img/games/1771057034_8c9e7a725e91bcbb38ff.jpg",
-  "mobile-legends": "https://hatamarket.com/public/img/games/1771057005_64f2c8db0cbd1e98daa2.jpg",
-  "pln": "https://hatamarket.com/public/img/games/076321100_1629812250-Logo_PLN.webp",
-  "token-pln": "https://hatamarket.com/public/img/games/076321100_1629812250-Logo_PLN.webp",
+  "free-fire": "https://placehold.co/400x400/111827/f97316?text=FF",
+  "mobile-legends": "https://placehold.co/400x400/172554/93c5fd?text=ML",
+  "pln": "https://placehold.co/400x400/0f172a/f8fafc?text=PLN",
+  "token-pln": "https://placehold.co/400x400/0f172a/f8fafc?text=PLN",
   "saldo-dana": "https://placehold.co/400x400/0f172a/5eead4?text=DANA",
   "saldo-gopay": "https://placehold.co/400x400/082f49/7dd3fc?text=GOPAY",
   "saldo-ovo": "https://placehold.co/400x400/2e1065/c4b5fd?text=OVO",
   "saldo-shopeepay": "https://placehold.co/400x400/7c2d12/fed7aa?text=SPAY",
-  "pulsa-axis": "https://hatamarket.com/public/img/games/axis.png",
-  "pulsa-by-u": "https://hatamarket.com/public/img/games/byu.png",
-  "pulsa-indosat": "https://hatamarket.com/public/img/games/untitled-1_64.png",
-  "pulsa-smartfren": "https://hatamarket.com/public/img/games/9a509491c6b29643993d851b11a3482c.jpg",
-  "pulsa-telkomsel": "https://hatamarket.com/public/img/games/telkomsel.png",
-  "pulsa-tri": "https://hatamarket.com/public/img/games/cart-icon-03_1.jpg",
-  "pulsa-xl": "https://hatamarket.com/public/img/games/xl.png",
+  "pulsa-axis": "https://placehold.co/400x400/1e293b/67e8f9?text=AXIS",
+  "pulsa-by-u": "https://placehold.co/400x400/0f172a/fbbf24?text=BYU",
+  "pulsa-indosat": "https://placehold.co/400x400/7c2d12/fde68a?text=ISAT",
+  "pulsa-smartfren": "https://placehold.co/400x400/3f3f46/f472b6?text=SF",
+  "pulsa-telkomsel": "https://placehold.co/400x400/7f1d1d/fca5a5?text=TSEL",
+  "pulsa-tri": "https://placehold.co/400x400/312e81/c4b5fd?text=TRI",
+  "pulsa-xl": "https://placehold.co/400x400/164e63/7dd3fc?text=XL",
 };
 
 export function getPublicCatalogThumbnail(slug: string, fallback?: string | null) {

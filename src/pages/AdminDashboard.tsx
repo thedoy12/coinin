@@ -140,6 +140,14 @@ export default function AdminDashboard() {
     onError: (error) => toast.error(error.message),
   });
 
+  const syncCatalog = trpc.admin.syncCatalog.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Katalog provider disinkronkan: ${result.totalRows} produk aktif`);
+      refreshAll();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
   const updateUserRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => {
       toast.success("Role akun diperbarui");
@@ -381,6 +389,10 @@ export default function AdminDashboard() {
           <Button variant="outline" size="sm" onClick={() => syncTopups.mutate()} className="border-slate-700 text-slate-300 hover:bg-slate-800">
             <RotateCcw className="w-4 h-4 mr-2" />
             Sync Top-up
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => syncCatalog.mutate()} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Sync Catalog
           </Button>
           <Button variant="outline" size="sm" onClick={refreshAll} className="border-slate-700 text-slate-300 hover:bg-slate-800">
             <RefreshCw className="w-4 h-4 mr-2" />
