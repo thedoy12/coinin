@@ -348,7 +348,7 @@ function normalizeService(row: DigiflazzPriceListItem): NormalizedService {
     productName: normalizeProductName(row.product_name, gameName),
     productType: inferProductType(row),
     priceModal,
-    priceSell: markup(priceModal),
+    priceSell: markup(priceModal, category === "Digital" ? "digital" : "game"),
     isActive: row.buyer_product_status && row.seller_product_status ? 1 : 0,
     requiresZoneId: requiresZoneId(gameName) ? 1 : 0,
     instructions: buildInstructions(gameName, category, requiresZoneId(gameName)),
