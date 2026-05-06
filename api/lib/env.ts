@@ -27,13 +27,9 @@ export const env = {
   topupApiUrl:
     process.env.TOPUP_API_URL ?? "",
   topupApiUsername:
-    process.env.NODE_ENV === "production"
-      ? required("TOPUP_API_USERNAME")
-      : process.env.TOPUP_API_USERNAME ?? "",
+    process.env.TOPUP_API_USERNAME ?? "",
   topupApiSecret:
-    process.env.NODE_ENV === "production"
-      ? required("TOPUP_API_SECRET")
-      : process.env.TOPUP_API_SECRET ?? "",
+    process.env.TOPUP_API_SECRET ?? "",
   topupWebhookSecret: process.env.TOPUP_WEBHOOK_SECRET ?? "",
   topupWebhookUrl: process.env.TOPUP_WEBHOOK_URL ?? "",
   topupUseTestingMode: process.env.TOPUP_TESTING === "true",
@@ -42,17 +38,11 @@ export const env = {
   topupPriceCeiling: Number(process.env.TOPUP_PRICE_CEILING ?? 0) || undefined,
   // Payment config
   paymentMerchantId:
-    process.env.NODE_ENV === "production"
-      ? required("PAYMENT_MERCHANT_ID")
-      : process.env.PAYMENT_MERCHANT_ID ?? "",
+    process.env.PAYMENT_MERCHANT_ID ?? "",
   paymentApiKey:
-    process.env.NODE_ENV === "production"
-      ? requiredSecret("PAYMENT_API_KEY", 16)
-      : process.env.PAYMENT_API_KEY ?? "",
+    process.env.PAYMENT_API_KEY ?? "",
   paymentSecretKey:
-    process.env.NODE_ENV === "production"
-      ? requiredSecret("PAYMENT_SECRET_KEY", 16)
-      : process.env.PAYMENT_SECRET_KEY ?? "",
+    process.env.PAYMENT_SECRET_KEY ?? "",
   paymentMethod: process.env.PAYMENT_METHOD ?? "QRIS",
   paymentApiUrl: process.env.PAYMENT_API_URL ?? "",
 };

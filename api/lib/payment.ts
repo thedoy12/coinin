@@ -49,6 +49,13 @@ export async function createQrisPayment(params: {
     quantity: number;
   }>;
 }) {
+  if (!isPaymentConfigured()) {
+    return {
+      success: false,
+      error: "Sistem pembayaran belum dikonfigurasi.",
+    };
+  }
+
   const endpoint = "/transaction/create";
   const startedAt = Date.now();
   const amount = Math.round(params.amount);
@@ -147,6 +154,13 @@ export function parsePaymentNotification(rawBody: string): PaymentNotification |
 }
 
 export async function checkPaymentStatus(providerReference: string) {
+  if (!isPaymentConfigured()) {
+    return {
+      success: false,
+      error: "Sistem pembayaran belum dikonfigurasi.",
+    };
+  }
+
   const endpoint = "/transaction/check-status";
   const startedAt = Date.now();
   try {
@@ -217,6 +231,16 @@ function normalizePaymentProviderStatus(status: string) {
   if (value === "UNPAID") return "PENDING";
   if (value === "EXPIRED") return "EXPIRED";
   return "FAILED";
+}
+
+function isPaymentConfigured() {
+  return Boolean(
+    env.paymentApiUrl &&
+    env.paymentMerchantId &&
+    env.paymentApiKey &&
+    env.paymentSecretKey &&
+    env.paymentMethod
+  );
 }
 
 function redactPaymentPayload<T extends Record<string, unknown>>(payload: T) {

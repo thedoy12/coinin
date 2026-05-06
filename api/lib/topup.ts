@@ -39,6 +39,13 @@ export async function placeTopupOrder(params: {
   zoneId?: string;
   referenceId: string;
 }) {
+  if (!isTopupConfigured()) {
+    return {
+      success: false,
+      error: "Sistem top-up belum dikonfigurasi.",
+    };
+  }
+
   const endpoint = "/transaction";
   const startedAt = Date.now();
   const payload = buildTransactionPayload(params);
@@ -99,6 +106,13 @@ export async function checkTopupStatus(params: {
 }
 
 export async function getTopupProfile() {
+  if (!isTopupConfigured()) {
+    return {
+      success: false,
+      error: "Sistem top-up belum dikonfigurasi.",
+    };
+  }
+
   const endpoint = "/cek-saldo";
   const startedAt = Date.now();
   const payload = {
@@ -146,6 +160,13 @@ export async function getTopupProfile() {
 }
 
 export async function getTopupServices() {
+  if (!isTopupConfigured()) {
+    return {
+      success: false,
+      error: "Sistem top-up belum dikonfigurasi.",
+    };
+  }
+
   const endpoint = "/price-list";
   const startedAt = Date.now();
   const payload = {
@@ -292,4 +313,8 @@ function getProviderMessage(data: unknown) {
       : typeof root.error === "string"
         ? root.error
         : "";
+}
+
+function isTopupConfigured() {
+  return Boolean(env.topupApiUrl && env.topupApiUsername && env.topupApiSecret);
 }
