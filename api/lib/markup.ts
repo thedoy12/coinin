@@ -5,14 +5,19 @@ export function markup(price: number, category: MarkupCategory = "game"): number
 }
 
 function markupGame(price: number) {
-  return applyPercentageMarkup(price, 0.04, 400, 3000);
+  if (price <= 20000) return applyPercentageMarkup(price, 0.045, 700);
+  if (price <= 100000) return applyPercentageMarkup(price, 0.04, 1000);
+  if (price <= 300000) return applyPercentageMarkup(price, 0.035, 0);
+  return applyPercentageMarkup(price, 0.03, 0, 50000);
 }
 
 function markupDigital(price: number) {
-  return applyPercentageMarkup(price, 0.025, 300, 1800);
+  if (price <= 20000) return applyPercentageMarkup(price, 0.03, 500);
+  if (price <= 100000) return applyPercentageMarkup(price, 0.025, 0);
+  return applyPercentageMarkup(price, 0.02, 0, 10000);
 }
 
-function applyPercentageMarkup(price: number, percentage: number, minimum: number, maximum: number) {
+function applyPercentageMarkup(price: number, percentage: number, minimum: number, maximum = Number.POSITIVE_INFINITY) {
   const margin = Math.min(Math.max(price * percentage, minimum), maximum);
   return roundToHundred(price + margin);
 }

@@ -11,6 +11,7 @@ import {
   publicSafeGameFilter,
   publicSafeProductFilter,
 } from "../lib/catalog-safety";
+import { markup } from "../lib/markup";
 import {
   expireOldTransactions,
   fulfillPaidTransaction,
@@ -520,7 +521,6 @@ export const adminRouter = createRouter({
     .input(
       z.object({
         rows: z.array(importProductRow).min(1).max(10000),
-        markupPercent: z.number().min(1).max(30).default(7),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -543,7 +543,7 @@ export const adminRouter = createRouter({
         }
 
         const priceModal = normalizeImportPrice(row.hargaRupiah);
-        const priceSell = calculatePercentMarkup(priceModal, input.markupPercent);
+        const priceSell = markup(priceModal, gameInfo.category === "Digital" ? "digital" : "game");
         const existingGame = await db
           .select()
           .from(games)
@@ -613,7 +613,7 @@ export const adminRouter = createRouter({
           skipped: skipped.length,
           gamesCreated,
           gamesUsed: Array.from(gamesUsed.entries()),
-          markupPercent: input.markupPercent,
+          pricingPolicy: "coinin-tiered",
         },
       });
 
@@ -772,11 +772,6 @@ function normalizeSlug(value: string) {
 
 function normalizeImportPrice(value: number) {
   return Math.round(value < 1000 ? value * 1000 : value);
-}
-
-function calculatePercentMarkup(price: number, percent: number) {
-  const marked = price * (1 + percent / 100);
-  return Math.ceil(marked / 100) * 100;
 }
 
 function cleanImportedName(value: string) {

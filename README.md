@@ -106,14 +106,16 @@ npm start
 
 ### Markup Logic
 
-```ts
-function markup(price: number) {
-  if (price <= 20000) return Math.ceil((price * 1.05) / 100) * 100;
-  if (price <= 50000) return Math.ceil((price * 1.04) / 100) * 100;
-  if (price <= 100000) return Math.ceil((price * 1.03) / 100) * 100;
-  return Math.ceil((price * 1.02) / 100) * 100;
-}
+```text
+Game:
+<= Rp20.000      : 4.5%, minimal Rp700
+<= Rp100.000     : 4%, minimal Rp1.000
+<= Rp300.000     : 3.5%
+> Rp300.000      : 3%, maksimal Rp50.000
 ```
+
+Harga dibulatkan ke atas ke kelipatan Rp100. Produk digital memakai markup lebih ketat:
+3% minimal Rp500, 2.5% sampai Rp100.000, lalu 2% maksimal Rp10.000.
 
 ## Struktur Project
 

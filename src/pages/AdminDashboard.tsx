@@ -67,7 +67,6 @@ export default function AdminDashboard() {
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [productImportFile, setProductImportFile] = useState<File | null>(null);
   const [productImportCount, setProductImportCount] = useState<number | null>(null);
-  const [productMarkupPercent, setProductMarkupPercent] = useState("7");
   const [transactionSearch, setTransactionSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [apiLogSearch, setApiLogSearch] = useState("");
@@ -324,19 +323,13 @@ export default function AdminDashboard() {
       return;
     }
 
-    const markupPercent = Number(productMarkupPercent);
-    if (!Number.isFinite(markupPercent) || markupPercent < 1 || markupPercent > 30) {
-      toast.error("Markup harus antara 1% sampai 30%");
-      return;
-    }
-
     try {
       const rows = await parseProductImportFile(productImportFile);
       if (!rows.length) {
         toast.error("Tidak ada produk valid di file");
         return;
       }
-      importProducts.mutate({ rows, markupPercent });
+      importProducts.mutate({ rows });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "File produk tidak bisa dibaca");
     }
@@ -589,23 +582,13 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle className="text-white">Import Katalog Game + Produk</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-[1.5fr_180px_auto] lg:items-end">
+            <CardContent className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
               <Field label="File Excel / HTML">
                 <Input
                   type="file"
                   accept=".xls,.html,.htm"
                   onChange={(event) => handleProductImportFile(event.target.files?.[0] ?? null)}
                   className="bg-slate-950 border-slate-700 text-white file:mr-4 file:rounded-md file:border-0 file:bg-cyan-500 file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-slate-950 hover:file:bg-cyan-400"
-                />
-              </Field>
-              <Field label="Markup Jual (%)">
-                <Input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={productMarkupPercent}
-                  onChange={(event) => setProductMarkupPercent(event.target.value)}
-                  className="bg-slate-950 border-slate-700 text-white"
                 />
               </Field>
               <Button
@@ -616,7 +599,7 @@ export default function AdminDashboard() {
                 <Upload className="w-4 h-4 mr-2" />
                 {importProducts.isPending ? "Mengimport..." : "Import"}
               </Button>
-              <p className="text-xs text-slate-500 lg:col-span-3">
+              <p className="text-xs text-slate-500 lg:col-span-2">
                 {productImportCount === null
                   ? "Kolom wajib: code, name, harga_rupiah. Kolom game didukung: game/game_name/nama_game, category/kategori, thumbnail, instructions/instruksi, requires_zone_id."
                   : `${productImportCount.toLocaleString("id-ID")} produk valid siap diimport. Game baru akan dibuat otomatis, game lama ikut diperbarui jika file memuat metadata game.`}
