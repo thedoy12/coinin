@@ -1,18 +1,26 @@
 import { and, inArray, notInArray, sql } from "drizzle-orm";
-import { games, products, transactions } from "../db/schema";
+import { games, products, providerApiLogs, transactions } from "../db/schema";
 import { markup } from "../api/lib/markup";
 import { getTopupServices } from "../api/lib/topup";
 import { getDb } from "../api/queries/connection";
 import { getPublicCatalogThumbnail, isSensitiveCatalogText } from "../api/lib/catalog-safety";
 
-type HataMarketService = {
-  id: string;
-  game: string;
-  nama_layanan: string;
-  harga: string;
-  kode: string;
+type DigiflazzPriceListItem = {
+  product_name: string;
+  category: string;
+  brand: string;
   type: string;
-  status: string;
+  seller_name?: string;
+  price: number | string;
+  buyer_sku_code: string;
+  buyer_product_status: boolean;
+  seller_product_status: boolean;
+  unlimited_stock?: boolean;
+  stock?: number | string;
+  multi?: boolean;
+  start_cut_off?: string;
+  end_cut_off?: string;
+  desc?: string;
 };
 
 type NormalizedService = {
@@ -27,6 +35,7 @@ type NormalizedService = {
   priceSell: number;
   isActive: number;
   requiresZoneId: number;
+  instructions: string;
 };
 
 const shouldApply = process.argv.includes("--apply");
@@ -56,14 +65,10 @@ const priorityGameSlugs = [
 ];
 
 async function main() {
-  console.log(`Sync HataMarket products (${shouldApply ? "apply" : "dry-run"})...`);
+  console.log(`Sync Digiflazz products (${shouldApply ? "apply" : "dry-run"})...`);
 
-  const response = await getTopupServices();
-  if (!response.success) {
-    throw new Error(response.error || "Failed to fetch HataMarket services");
-  }
-
-  const services = extractServices(response.data)
+  const priceListData = await loadPriceListData();
+  const services = extractServices(priceListData)
     .map(normalizeService)
     .filter((service) => (onlyActive ? service.isActive === 1 : true));
   const rows = filterCatalogRows(services);
@@ -76,7 +81,6 @@ async function main() {
 
   if (!shouldApply) {
     console.log("Dry-run only. Run with --apply to write to database.");
-    console.log("Sample:");
     console.table(rows.slice(0, 10).map((row) => ({
       game: row.gameName,
       code: row.providerCode,
@@ -106,7 +110,7 @@ async function main() {
     thumbnail: row.thumbnail,
     requiresZoneId: row.requiresZoneId,
     isActive: 1,
-    instructions: buildInstructions(row),
+    instructions: row.instructions,
   }));
 
   await db
@@ -129,9 +133,7 @@ async function main() {
   const gameBySlug = new Map(syncedGames.map((game) => [game.slug, game]));
 
   const existingProducts = await db.select().from(products);
-  const existingProductKeys = new Set(
-    existingProducts.map((product) => `${product.gameId}:${product.providerCode}`)
-  );
+  const existingProductKeys = new Set(existingProducts.map((product) => `${product.gameId}:${product.providerCode}`));
   const productValues = rows.map((row) => {
     const game = gameBySlug.get(row.gameSlug);
     if (!game) {
@@ -198,6 +200,39 @@ async function main() {
     gamesDeactivated,
     totalServices: rows.length,
   });
+}
+
+async function loadPriceListData() {
+  const response = await getTopupServices();
+  if (response.success) {
+    return response.data;
+  }
+
+  const fallback = await getCachedPriceListData();
+  if (fallback) {
+    console.log("Digiflazz pricelist is rate limited. Using last successful cached response from provider_api_logs.");
+    return fallback;
+  }
+
+  throw new Error(response.error || "Failed to fetch Digiflazz price list");
+}
+
+async function getCachedPriceListData() {
+  const db = getDb();
+  const rows = await db
+    .select({ responsePayload: providerApiLogs.responsePayload })
+    .from(providerApiLogs)
+    .where(and(sql`${providerApiLogs.success} = 1`, sql`${providerApiLogs.provider} = 'digiflazz'`, sql`${providerApiLogs.endpoint} = '/price-list'`))
+    .orderBy(sql`${providerApiLogs.createdAt} desc`)
+    .limit(1);
+
+  const payload = rows[0]?.responsePayload;
+  if (!payload) return null;
+  try {
+    return JSON.parse(payload) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 async function pruneCatalog(
@@ -271,55 +306,40 @@ function chunks<T>(items: T[], size: number): T[][] {
   return result;
 }
 
-function extractServices(data: unknown): HataMarketService[] {
-  const items = Array.isArray(data)
-    ? data
-    : typeof data === "object" && data !== null && Array.isArray((data as { data?: unknown }).data)
-      ? (data as { data: unknown[] }).data
-      : [];
-
-  return items
-    .map((item) => {
-      if (isService(item)) return item;
-      if (
-        typeof item === "object" &&
-        item !== null &&
-        isService((item as { data?: unknown }).data)
-      ) {
-        return (item as { data: HataMarketService }).data;
-      }
-      return null;
-    })
-    .filter((item): item is HataMarketService => item !== null);
+function extractServices(data: unknown): DigiflazzPriceListItem[] {
+  const items = typeof data === "object" && data !== null && Array.isArray((data as { data?: unknown }).data)
+    ? (data as { data: unknown[] }).data
+    : [];
+  return items.filter(isService);
 }
 
-function isService(value: unknown): value is HataMarketService {
+function isService(value: unknown): value is DigiflazzPriceListItem {
   if (typeof value !== "object" || value === null) return false;
-  const row = value as Partial<HataMarketService>;
-  return Boolean(row.game && row.nama_layanan && row.harga && row.kode);
+  const row = value as Partial<DigiflazzPriceListItem>;
+  return Boolean(row.product_name && row.brand && row.buyer_sku_code && row.price !== undefined);
 }
 
-function normalizeService(row: HataMarketService): NormalizedService {
-  const rawGameName = normalizeName(row.game);
-  const productName = normalizeName(row.nama_layanan);
-  const gameName = normalizeUtilityGameName(rawGameName, productName);
-  const priceModal = Number.parseInt(row.harga, 10);
+function normalizeService(row: DigiflazzPriceListItem): NormalizedService {
+  const gameName = normalizeGameName(row.brand, row.product_name, row.category);
+  const gameSlug = normalizeSlug(gameName);
+  const priceModal = Number.parseInt(String(row.price), 10);
   if (!Number.isFinite(priceModal) || priceModal <= 0) {
-    throw new Error(`Invalid price for service ${row.kode}`);
+    throw new Error(`Invalid price for service ${row.buyer_sku_code}`);
   }
 
   return {
     gameName,
-    gameSlug: normalizeSlug(gameName),
-    category: inferCategory(gameName, row.type),
-    thumbnail: buildThumbnailUrl(gameName, normalizeSlug(gameName)),
-    providerCode: row.kode.trim(),
-    productName,
+    gameSlug,
+    category: inferCategory(gameName, row.category, row.type),
+    thumbnail: buildThumbnailUrl(gameName, gameSlug),
+    providerCode: row.buyer_sku_code.trim(),
+    productName: normalizeName(row.product_name),
     productType: inferProductType(row),
     priceModal,
     priceSell: markup(priceModal),
-    isActive: row.status.toLowerCase() === "aktif" ? 1 : 0,
+    isActive: row.buyer_product_status && row.seller_product_status ? 1 : 0,
     requiresZoneId: requiresZoneId(gameName) ? 1 : 0,
+    instructions: buildInstructions(gameName, inferCategory(gameName, row.category, row.type), requiresZoneId(gameName)),
   };
 }
 
@@ -379,7 +399,7 @@ function isGameCatalogService(row: NormalizedService) {
 }
 
 function isAllowedUtilityService(row: NormalizedService) {
-  return isPulsaService(row.gameName, row.productName) || isPlnService(row.gameName);
+  return isPulsaService(row.gameName, row.productName) || isPlnService(row.gameName) || isWalletService(row.gameName, row.productName);
 }
 
 function isPulsaService(gameName: string, productName: string) {
@@ -391,7 +411,7 @@ function isPulsaService(gameName: string, productName: string) {
 function isKnownGameService(row: NormalizedService) {
   if (row.category === "Voucher" || row.category === "Digital") return false;
   const text = `${row.gameName} ${row.productName}`.toLowerCase();
-  if (/hbo|iqiyi|indomaret|razer\s*gold|spotify|netflix|vidio|viu|google\s*play|steam|voucher|telkomsel|indosat|im3|xl|axis|tri|three|smartfren|by\.?u/.test(text)) {
+  if (/google play|steam|spotify|netflix|vidio|viu|token listrik|pulsa|ewallet|e-money|ovo|dana|gopay|shopeepay|voucher/.test(text)) {
     return false;
   }
   return true;
@@ -401,8 +421,8 @@ function isSensitiveCatalogService(row: NormalizedService) {
   return isSensitiveCatalogText(row.gameName, row.gameSlug, row.productName, row.providerCode);
 }
 
-function inferProductType(row: HataMarketService): "general" | "membership" {
-  const text = `${row.type} ${row.nama_layanan}`.toLowerCase();
+function inferProductType(row: DigiflazzPriceListItem): "general" | "membership" {
+  const text = `${row.type} ${row.product_name} ${row.desc ?? ""}`.toLowerCase();
   if (
     /membership|member|weekly|monthly|pass|subscription|langganan|welkin|battle pass|season pass|starlight|twilight|growth plan/.test(text)
   ) {
@@ -456,23 +476,42 @@ function normalizeName(value: string) {
     .replace(/\bPln\b/g, "PLN");
 }
 
-function normalizeUtilityGameName(gameName: string, productName: string) {
-  const text = `${gameName} ${productName}`;
-  if (isPlnService(gameName)) {
-    return /token/i.test(gameName) ? "Token PLN" : "PLN";
+function normalizeGameName(brand: string, productName: string, category: string) {
+  const normalizedBrand = normalizeName(brand);
+  const normalizedProduct = normalizeName(productName);
+  const text = `${brand} ${productName} ${category}`;
+
+  if (isPlnService(text)) return /token/i.test(text) ? "Token PLN" : "PLN";
+  if (isWalletService(normalizedBrand, normalizedProduct)) {
+    if (/dana/i.test(text)) return "Saldo DANA";
+    if (/go\s*pay|gopay/i.test(text)) return "Saldo GoPay";
+    if (/ovo/i.test(text)) return "Saldo OVO";
+    if (/shopee\s*pay|shopeepay/i.test(text)) return "Saldo ShopeePay";
+    return normalizedBrand;
   }
-  if (!isPulsaService(gameName, productName)) {
-    return gameName;
+  if (isPulsaService(normalizedBrand, normalizedProduct)) {
+    if (/by\.?u/i.test(text)) return "Pulsa By.U";
+    if (/axis/i.test(text)) return "Pulsa Axis";
+    if (/\bxl\b/i.test(text)) return "Pulsa Xl";
+    if (/telkomsel/i.test(text)) return "Pulsa Telkomsel";
+    if (/indosat|im3/i.test(text)) return "Pulsa Indosat";
+    if (/tri|three/i.test(text)) return "Pulsa Tri";
+    if (/smartfren/i.test(text)) return "Pulsa Smartfren";
+    return normalizedBrand.toLowerCase().includes("pulsa") ? normalizedBrand : `Pulsa ${normalizedBrand}`;
   }
 
-  if (/by\.?u/i.test(text)) return "Pulsa By.U";
-  if (/axis/i.test(text)) return "Pulsa Axis";
-  if (/xl/i.test(text)) return "Pulsa Xl";
-  if (/telkomsel/i.test(text)) return "Pulsa Telkomsel";
-  if (/indosat|im3/i.test(text)) return "Pulsa Indosat";
-  if (/tri|three/i.test(text)) return "Pulsa Tri";
-  if (/smartfren/i.test(text)) return "Pulsa Smartfren";
-  return gameName.toLowerCase().includes("pulsa") ? gameName : `Pulsa ${gameName}`;
+  if (/mlbb|mobile legends/i.test(text)) return "Mobile Legends";
+  if (/free fire/i.test(text)) return "Free Fire";
+  if (/pubg/i.test(text)) return "PUBG Mobile";
+  if (/codm|call of duty/i.test(text)) return "Call of Duty Mobile";
+  if (/wild rift/i.test(text)) return "League of Legends Wild Rift";
+  if (/hok|honor of kings/i.test(text)) return "Honor of Kings";
+  if (/fc mobile/i.test(text)) return "FC Mobile";
+  if (/efootball/i.test(text)) return "eFootball";
+  if (/honkai star rail/i.test(text)) return "Honkai Star Rail";
+  if (/point blank/i.test(text)) return /via/i.test(text) ? "Point Blank Via ID" : "Point Blank";
+
+  return normalizedBrand || normalizedProduct;
 }
 
 function normalizeSlug(value: string) {
@@ -483,12 +522,12 @@ function normalizeSlug(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function inferCategory(gameName: string, type: string) {
-  const text = `${gameName} ${type}`.toLowerCase();
-  if (/voucher|wallet|google play|steam|garena|netflix|spotify|vidio|viu/.test(text)) {
+function inferCategory(gameName: string, category: string, type: string) {
+  const text = `${gameName} ${category} ${type}`.toLowerCase();
+  if (/voucher|gift card|wallet|google play|steam|garena/.test(text)) {
     return "Voucher";
   }
-  if (/pulsa|paket data|\bdata\b|token pln|pln/.test(text)) {
+  if (/pulsa|paket data|\bdata\b|token pln|pln|e-money|ewallet|go\s*pay|\bgopay\b|\bovo\b|\bdana\b|shopee\s*pay/.test(text)) {
     return "Digital";
   }
   if (/mobile legends|arena of valor|wild rift|honor of kings/.test(text)) {
@@ -497,7 +536,7 @@ function inferCategory(gameName: string, type: string) {
   if (/free fire|pubg|blood strike|farlight|sausage/.test(text)) {
     return "Battle Royale";
   }
-  if (/valorant|call of duty|point blank/.test(text)) {
+  if (/valorant|call of duty|point blank|delta force/.test(text)) {
     return "FPS";
   }
   if (/genshin|honkai|zenless|wuthering|ragnarok|dragon|tower of fantasy/.test(text)) {
@@ -510,20 +549,23 @@ function requiresZoneId(gameName: string) {
   return /mobile legends|genshin|honkai|wuthering|tower of fantasy/i.test(gameName);
 }
 
-function buildInstructions(row: NormalizedService) {
-  if (isPlnService(row.gameName)) {
-    return `Masukkan nomor meter / ID pelanggan ${row.gameName} dengan benar.`;
+function buildInstructions(gameName: string, category: string, zoneRequired: boolean) {
+  if (isPlnService(gameName)) {
+    return `Masukkan nomor meter / ID pelanggan ${gameName} dengan benar.`;
   }
-  if (isPhoneService(row.gameName)) {
-    return `Masukkan nomor handphone tujuan ${row.gameName} dengan benar.`;
+  if (isPhoneService(gameName)) {
+    return `Masukkan nomor handphone tujuan ${gameName} dengan benar.`;
   }
-  if (isVoucherService(row.gameName, row.category)) {
-    return `Masukkan nomor handphone / email penerima jika diminta untuk ${row.gameName}.`;
+  if (isWalletService(gameName, gameName)) {
+    return `Masukkan nomor handphone / akun tujuan ${gameName} dengan benar.`;
   }
-  if (row.requiresZoneId === 1) {
-    return `Masukkan User ID dan Zone ID / Server ${row.gameName} dengan benar.`;
+  if (isVoucherService(gameName, category)) {
+    return `Masukkan nomor handphone / email penerima jika diminta untuk ${gameName}.`;
   }
-  return `Masukkan User ID ${row.gameName} dengan benar.`;
+  if (zoneRequired) {
+    return `Masukkan User ID dan Zone ID / Server ${gameName} dengan benar.`;
+  }
+  return `Masukkan User ID ${gameName} dengan benar.`;
 }
 
 function isPhoneService(gameName: string) {
@@ -532,6 +574,10 @@ function isPhoneService(gameName: string) {
 
 function isPlnService(gameName: string) {
   return /pln|token listrik/i.test(gameName);
+}
+
+function isWalletService(gameName: string, productName: string) {
+  return /\bdana\b|go\s*pay|\bgopay\b|\bovo\b|shopee\s*pay|shopeepay|e-money/i.test(`${gameName} ${productName}`);
 }
 
 function isVoucherService(gameName: string, category: string) {

@@ -17,7 +17,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "sync:hatamarket": "tsx scripts/sync-hatamarket-products.ts",
+    "sync:digiflazz": "tsx scripts/sync-digiflazz-products.ts",
     "cleanup:second-games": "tsx scripts/cleanup-second-games.ts"
   },
   "dependencies": {

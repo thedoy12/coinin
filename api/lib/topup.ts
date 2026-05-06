@@ -8,12 +8,30 @@ import { writeProviderApiLog } from "./provider-api-log";
 const topupApi = axios.create({
   baseURL: env.topupApiUrl,
   headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
+    Accept: "application/json",
+    "Content-Type": "application/json",
   },
   httpAgent: new http.Agent({ family: 4 }),
   httpsAgent: new https.Agent({ family: 4 }),
   timeout: 20_000,
+  validateStatus: (status) => status < 500,
 });
+
+type DigiflazzTopupResponse = {
+  data?: {
+    ref_id?: string;
+    customer_no?: string;
+    buyer_sku_code?: string;
+    message?: string;
+    status?: string;
+    rc?: string;
+    sn?: string;
+    buyer_last_saldo?: number;
+    price?: number;
+    wa?: string;
+    tele?: string;
+  };
+};
 
 export async function placeTopupOrder(params: {
   providerCode: string;
@@ -21,29 +39,26 @@ export async function placeTopupOrder(params: {
   zoneId?: string;
   referenceId: string;
 }) {
-  const endpoint = "/order";
+  const endpoint = "/transaction";
   const startedAt = Date.now();
-  const payload = buildPayload({
-    order_id: params.referenceId,
-    service_id: params.providerCode,
-    target_id: params.userIdGame,
-    ...(params.zoneId ? { target_server: params.zoneId } : {}),
-  });
+  const payload = buildTransactionPayload(params);
 
   try {
-    const response = await topupApi.post(endpoint, payload.toString());
+    const response = await topupApi.post<DigiflazzTopupResponse>(endpoint, payload);
+    const success = isProviderSuccess(response.data);
     await writeProviderApiLog({
-      provider: "hatamarket",
+      provider: "digiflazz",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
+      requestPayload: redactCredentials(payload),
       responsePayload: response.data,
       statusCode: response.status,
-      success: isProviderSuccess(response.data),
+      success,
+      error: success ? undefined : getProviderMessage(response.data),
       durationMs: Date.now() - startedAt,
     });
-    if (!isProviderSuccess(response.data)) {
+    if (!success) {
       return {
         success: false,
         error: getProviderMessage(response.data),
@@ -56,11 +71,11 @@ export async function placeTopupOrder(params: {
     };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "hatamarket",
+      provider: "digiflazz",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
+      requestPayload: redactCredentials(payload),
       responsePayload: getAxiosResponseData(error),
       statusCode: getAxiosStatus(error),
       success: false,
@@ -74,73 +89,39 @@ export async function placeTopupOrder(params: {
   }
 }
 
-export async function checkTopupStatus(referenceId: string) {
-  const endpoint = "/status";
-  const startedAt = Date.now();
-  const payload = buildPayload({ order_id: referenceId });
-
-  try {
-    const response = await topupApi.post(endpoint, payload.toString());
-    await writeProviderApiLog({
-      provider: "hatamarket",
-      referenceId,
-      method: "POST",
-      endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
-      responsePayload: response.data,
-      statusCode: response.status,
-      success: isProviderSuccess(response.data),
-      durationMs: Date.now() - startedAt,
-    });
-    if (!isProviderSuccess(response.data)) {
-      return {
-        success: false,
-        error: getProviderMessage(response.data),
-        data: response.data,
-      };
-    }
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error: unknown) {
-    await writeProviderApiLog({
-      provider: "hatamarket",
-      referenceId,
-      method: "POST",
-      endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
-      responsePayload: getAxiosResponseData(error),
-      statusCode: getAxiosStatus(error),
-      success: false,
-      error: getErrorMessage(error),
-      durationMs: Date.now() - startedAt,
-    });
-    return {
-      success: false,
-      error: getErrorMessage(error),
-    };
-  }
+export async function checkTopupStatus(params: {
+  providerCode: string;
+  userIdGame: string;
+  zoneId?: string;
+  referenceId: string;
+}) {
+  return placeTopupOrder(params);
 }
 
 export async function getTopupProfile() {
-  const endpoint = "/profile";
+  const endpoint = "/cek-saldo";
   const startedAt = Date.now();
-  const payload = buildPayload();
+  const payload = {
+    cmd: "deposit",
+    username: env.topupApiUsername,
+    sign: createProfileSignature(),
+  };
 
   try {
-    const response = await topupApi.post(endpoint, payload.toString());
+    const response = await topupApi.post(endpoint, payload);
+    const success = response.status >= 200 && response.status < 300 && typeof response.data === "object" && response.data !== null;
     await writeProviderApiLog({
-      provider: "hatamarket",
+      provider: "digiflazz",
       method: "POST",
       endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
+      requestPayload: redactCredentials(payload),
       responsePayload: response.data,
       statusCode: response.status,
-      success: isProviderSuccess(response.data),
+      success,
+      error: success ? undefined : getProviderMessage(response.data),
       durationMs: Date.now() - startedAt,
     });
-    if (!isProviderSuccess(response.data)) {
+    if (!success) {
       return {
         success: false,
         error: getProviderMessage(response.data),
@@ -150,10 +131,10 @@ export async function getTopupProfile() {
     return { success: true, data: response.data };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "hatamarket",
+      provider: "digiflazz",
       method: "POST",
       endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
+      requestPayload: redactCredentials(payload),
       responsePayload: getAxiosResponseData(error),
       statusCode: getAxiosStatus(error),
       success: false,
@@ -165,23 +146,29 @@ export async function getTopupProfile() {
 }
 
 export async function getTopupServices() {
-  const endpoint = "/service";
+  const endpoint = "/price-list";
   const startedAt = Date.now();
-  const payload = buildPayload();
+  const payload = {
+    cmd: "prepaid",
+    username: env.topupApiUsername,
+    sign: createPriceListSignature(),
+  };
 
   try {
-    const response = await topupApi.post(endpoint, payload.toString());
+    const response = await topupApi.post(endpoint, payload);
+    const success = response.status >= 200 && response.status < 300 && Array.isArray((response.data as { data?: unknown })?.data);
     await writeProviderApiLog({
-      provider: "hatamarket",
+      provider: "digiflazz",
       method: "POST",
       endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
+      requestPayload: redactCredentials(payload),
       responsePayload: response.data,
       statusCode: response.status,
-      success: isProviderSuccess(response.data),
+      success,
+      error: success ? undefined : getProviderMessage(response.data),
       durationMs: Date.now() - startedAt,
     });
-    if (!isProviderSuccess(response.data)) {
+    if (!success) {
       return {
         success: false,
         error: getProviderMessage(response.data),
@@ -191,10 +178,10 @@ export async function getTopupServices() {
     return { success: true, data: response.data };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "hatamarket",
+      provider: "digiflazz",
       method: "POST",
       endpoint,
-      requestPayload: redactCredentials(Object.fromEntries(payload)),
+      requestPayload: redactCredentials(payload),
       responsePayload: getAxiosResponseData(error),
       statusCode: getAxiosStatus(error),
       success: false,
@@ -205,26 +192,57 @@ export async function getTopupServices() {
   }
 }
 
-function buildPayload(values: Record<string, string | undefined> = {}) {
-  return new URLSearchParams({
-    api_id: env.topupApiKey,
-    api_key: env.topupApiSecret,
-    signature: createSignature(),
-    ...values,
-  });
+export function buildCustomerNumber(params: { userIdGame: string; zoneId?: string }) {
+  const userId = params.userIdGame.trim();
+  const zoneId = params.zoneId?.trim();
+  if (!zoneId) return userId;
+  return `${userId}${env.topupZoneSeparator}${zoneId}`;
 }
 
-function createSignature() {
+function buildTransactionPayload(params: {
+  providerCode: string;
+  userIdGame: string;
+  zoneId?: string;
+  referenceId: string;
+}) {
+  const payload: Record<string, unknown> = {
+    username: env.topupApiUsername,
+    buyer_sku_code: params.providerCode,
+    customer_no: buildCustomerNumber(params),
+    ref_id: params.referenceId,
+    sign: createTransactionSignature(params.referenceId),
+    max_price: env.topupUseBuyerPriceLimit ? env.topupPriceCeiling : undefined,
+    cb_url: env.topupWebhookUrl || undefined,
+  };
+  if (env.topupUseTestingMode) {
+    payload.testing = true;
+  }
+  return payload;
+}
+
+function createTransactionSignature(referenceId: string) {
   return createHash("md5")
-    .update(`${env.topupApiKey}${env.topupApiSecret}`)
+    .update(`${env.topupApiUsername}${env.topupApiSecret}${referenceId}`)
+    .digest("hex");
+}
+
+function createPriceListSignature() {
+  return createHash("md5")
+    .update(`${env.topupApiUsername}${env.topupApiSecret}pricelist`)
+    .digest("hex");
+}
+
+function createProfileSignature() {
+  return createHash("md5")
+    .update(`${env.topupApiUsername}${env.topupApiSecret}depo`)
     .digest("hex");
 }
 
 function redactCredentials(payload: Record<string, unknown>) {
   return {
     ...payload,
-    api_key: payload.api_key ? "[REDACTED]" : payload.api_key,
-    signature: payload.signature ? "[REDACTED]" : payload.signature,
+    username: payload.username ? "[REDACTED]" : payload.username,
+    sign: payload.sign ? "[REDACTED]" : payload.sign,
   };
 }
 
@@ -243,25 +261,32 @@ function getAxiosResponseData(error: unknown) {
 
 function getErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
-    return getProviderMessage(error.response?.data) || error.message || error.code || "HataMarket request failed";
+    return getProviderMessage(error.response?.data) || error.message || error.code || "Digiflazz request failed";
   }
   return error instanceof Error ? error.message : "Unknown error";
 }
 
 function isProviderSuccess(data: unknown) {
   if (typeof data !== "object" || data === null) return false;
-  const root = data as { result?: unknown; status?: unknown };
-  if (root.result !== undefined) return root.result !== false;
-  if (root.status !== undefined) return root.status !== false;
-  return true;
+  const root = data as { data?: { status?: unknown; rc?: unknown } };
+  const status = typeof root.data?.status === "string" ? root.data.status.toLowerCase() : "";
+  const rc = typeof root.data?.rc === "string" ? root.data.rc : "";
+  if (status === "sukses" || status === "success") return true;
+  if (status === "pending") return true;
+  if (rc === "00" || rc === "03") return true;
+  return false;
 }
 
 function getProviderMessage(data: unknown) {
   if (typeof data === "string") return data;
   if (typeof data !== "object" || data === null) return "";
-  const root = data as { msg?: unknown; message?: unknown; error?: unknown };
-  return typeof root.msg === "string"
-    ? root.msg
+  const root = data as {
+    message?: unknown;
+    error?: unknown;
+    data?: { message?: unknown };
+  };
+  return typeof root.data?.message === "string"
+    ? root.data.message
     : typeof root.message === "string"
       ? root.message
       : typeof root.error === "string"

@@ -16,7 +16,7 @@ export function getTargetCopy(gameName: string, category?: string | null) {
       showZone: false,
     };
   }
-  if (/voucher|wallet|steam|garena|google play|alfamart/.test(text)) {
+  if (/voucher|wallet|steam|garena|google play|alfamart|\bdana\b|go\s*pay|\bgopay\b|\bovo\b|shopee ?pay|e-money/.test(text)) {
     return {
       label: "Data Tujuan",
       placeholder: "Masukkan nomor HP / email / ID tujuan",

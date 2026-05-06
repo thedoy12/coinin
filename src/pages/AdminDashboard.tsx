@@ -689,7 +689,7 @@ export default function AdminDashboard() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-white flex items-center gap-2">
                 <Server className="w-5 h-5 text-cyan-300" />
-                Log API Apigames
+                Log API Provider
               </CardTitle>
               <Button size="sm" variant="outline" className="border-slate-700 text-slate-300" onClick={() => downloadCsv("provider-api-logs.csv", providerApiLogs)}>
                 <Download className="w-4 h-4 mr-2" />
@@ -900,7 +900,7 @@ function ProviderApiLogTable({ rows }: { rows: ProviderApiLogRow[] }) {
           {!rows.length && (
             <TableRow>
               <TableCell colSpan={6} className="text-center text-slate-500 py-8">
-                Belum ada log API provider. Log akan muncul setelah order paid dikirim ke Apigames.
+                Belum ada log API provider. Log akan muncul setelah order paid dikirim ke Digiflazz.
               </TableCell>
             </TableRow>
           )}

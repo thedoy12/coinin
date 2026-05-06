@@ -201,7 +201,27 @@ export async function syncProcessingTopups(limit = 50) {
 
   const results: Array<{ referenceId: string; status: string; error?: string }> = [];
   for (const tx of rows) {
-    const response = await checkTopupStatus(tx.referenceId);
+    const productResult = await db
+      .select({ providerCode: products.providerCode })
+      .from(products)
+      .where(eq(products.id, tx.productId))
+      .limit(1);
+    const providerCode = productResult[0]?.providerCode;
+    if (!providerCode) {
+      results.push({
+        referenceId: tx.referenceId,
+        status: "error",
+        error: "Provider code not found",
+      });
+      continue;
+    }
+
+    const response = await checkTopupStatus({
+      providerCode,
+      userIdGame: tx.userIdGame,
+      zoneId: tx.zoneId || undefined,
+      referenceId: tx.referenceId,
+    });
     if (!response.success) {
       results.push({
         referenceId: tx.referenceId,
@@ -243,9 +263,9 @@ export async function syncProcessingTopups(limit = 50) {
 function extractTopupReference(data: unknown) {
   if (typeof data !== "object" || data === null) return null;
   const root = data as {
-    data?: { trxid?: unknown; reference?: unknown; order_id?: unknown };
+    data?: { trxid?: unknown; reference?: unknown; order_id?: unknown; ref_id?: unknown; sn?: unknown };
   };
-  const ref = root.data?.trxid ?? root.data?.reference ?? root.data?.order_id;
+  const ref = root.data?.trxid ?? root.data?.reference ?? root.data?.order_id ?? root.data?.ref_id ?? root.data?.sn;
   return typeof ref === "string" ? ref : null;
 }
 
@@ -271,9 +291,12 @@ function extractTopupStatus(data: unknown) {
   if (typeof data !== "object" || data === null) return "success";
   const root = data as {
     status?: unknown;
-    data?: { status?: unknown };
+    data?: { status?: unknown; rc?: unknown };
   };
   const raw = root.data?.status ?? root.status;
+  const rc = typeof root.data?.rc === "string" ? root.data.rc : "";
+  if (rc === "00") return "success";
+  if (rc === "03") return "processing";
   if (typeof raw !== "string") return "success";
   const value = raw.toLowerCase();
   if (["success", "sukses", "berhasil", "completed", "complete"].includes(value)) {

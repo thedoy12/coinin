@@ -25,15 +25,21 @@ export const env = {
   appUrl: process.env.VITE_APP_URL ?? "http://localhost:3000",
   // Top-up API config
   topupApiUrl:
-    process.env.TOPUP_API_URL ?? "https://hatamarket.com/api",
-  topupApiKey:
+    process.env.TOPUP_API_URL ?? "https://api.digiflazz.com/v1",
+  topupApiUsername:
     process.env.NODE_ENV === "production"
-      ? process.env.HATAMARKET_API_ID ?? required("TOPUP_API_KEY")
-      : process.env.HATAMARKET_API_ID ?? process.env.TOPUP_API_KEY ?? "",
+      ? process.env.DIGIFLAZZ_USERNAME ?? required("TOPUP_API_USERNAME")
+      : process.env.DIGIFLAZZ_USERNAME ?? process.env.TOPUP_API_USERNAME ?? "",
   topupApiSecret:
     process.env.NODE_ENV === "production"
-      ? process.env.HATAMARKET_API_KEY ?? required("TOPUP_API_SECRET")
-      : process.env.HATAMARKET_API_KEY ?? process.env.TOPUP_API_SECRET ?? "",
+      ? process.env.DIGIFLAZZ_API_KEY ?? required("TOPUP_API_SECRET")
+      : process.env.DIGIFLAZZ_API_KEY ?? process.env.TOPUP_API_SECRET ?? "",
+  topupWebhookSecret: process.env.DIGIFLAZZ_WEBHOOK_SECRET ?? process.env.TOPUP_WEBHOOK_SECRET ?? "",
+  topupWebhookUrl: process.env.DIGIFLAZZ_WEBHOOK_URL ?? process.env.TOPUP_WEBHOOK_URL ?? "",
+  topupUseTestingMode: process.env.DIGIFLAZZ_TESTING === "true",
+  topupZoneSeparator: process.env.DIGIFLAZZ_ZONE_SEPARATOR ?? process.env.TOPUP_ZONE_SEPARATOR ?? "",
+  topupUseBuyerPriceLimit: process.env.DIGIFLAZZ_MAX_PRICE !== "false",
+  topupPriceCeiling: Number(process.env.DIGIFLAZZ_PRICE_CEILING ?? process.env.TOPUP_PRICE_CEILING ?? 0) || undefined,
   // Payment gateway config
   paymentMerchantId:
     process.env.NODE_ENV === "production"

@@ -9,7 +9,7 @@ Platform top-up game fullstack dengan integrasi payment gateway dan API top-up o
 - **Database**: Drizzle ORM + PostgreSQL
 - **Auth**: Username/email + password, session JWT, role admin
 - **Payment**: Tripay
-- **Top-up API**: HataMarket
+- **Top-up API**: Digiflazz
 
 ## Cara Menjalankan Project
 
@@ -24,10 +24,10 @@ npm install
 File `.env` sudah tersedia dengan konfigurasi default. Sesuaikan bagian berikut:
 
 ```env
-# Top-up API (HataMarket)
-TOPUP_API_URL=https://hatamarket.com/api
-HATAMARKET_API_ID=YOUR_API_ID
-HATAMARKET_API_KEY=YOUR_API_KEY
+# Top-up API (Digiflazz)
+TOPUP_API_URL=https://api.digiflazz.com/v1
+DIGIFLAZZ_USERNAME=YOUR_USERNAME
+DIGIFLAZZ_API_KEY=YOUR_API_KEY
 
 # Payment Gateway (Tripay)
 TRIPAY_MERCHANT_CODE=YOUR_MERCHANT_CODE
@@ -89,6 +89,7 @@ npm start
 ### HTTP Endpoints
 
 - `POST /api/callback` - Handle payment callback dari gateway
+- `POST /api/provider-callback` - Handle webhook update transaksi dari Digiflazz
 - `GET /api/status/:referenceId` - Public status check
 
 ### Security

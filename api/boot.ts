@@ -4,6 +4,7 @@ import type { HttpBindings } from "@hono/node-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
@@ -129,6 +130,72 @@ app.post("/api/callback", async (c) => {
   }
 });
 
+app.get("/api/provider-callback", (c) =>
+  c.json({
+    ok: true,
+    endpoint: "CoinIn provider callback",
+    provider: "digiflazz",
+    method: "POST",
+  })
+);
+
+app.post("/api/provider-callback", async (c) => {
+  try {
+    const rawBody = await c.req.text();
+    const event = c.req.header("x-digiflazz-event") || "";
+    const signature = c.req.header("x-hub-signature") || "";
+
+    if (!verifyDigiflazzWebhook(rawBody, signature)) {
+      return c.json({ error: "Invalid provider signature" }, 400);
+    }
+
+    const payload = parseDigiflazzWebhook(rawBody);
+    if (!payload?.referenceId) {
+      return c.json({ error: "Missing provider reference" }, 400);
+    }
+
+    const db = getDb();
+    const txResult = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.referenceId, payload.referenceId))
+      .limit(1);
+
+    if (!txResult[0]) {
+      return c.json({ error: "Transaction not found" }, 404);
+    }
+
+    const update: Partial<typeof transactions.$inferInsert> = {
+      topupReference: payload.topupReference,
+      topupResponse: rawBody,
+      updatedAt: new Date(),
+      lastError: payload.status === "failed" ? payload.message || "Top-up failed" : null,
+    };
+
+    if (payload.status === "success") {
+      update.topupStatus = "success";
+      update.status = "success";
+      update.completedAt = new Date();
+    } else if (payload.status === "failed") {
+      update.topupStatus = "failed";
+      update.status = "failed";
+    } else {
+      update.topupStatus = "processing";
+      update.status = "processing";
+    }
+
+    await db
+      .update(transactions)
+      .set(update)
+      .where(eq(transactions.referenceId, payload.referenceId));
+
+    return c.json({ success: true, event: event || "update" });
+  } catch (error) {
+    console.error("Provider callback error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
 app.post("/api/admin/game-thumbnail", async (c) => {
   try {
     const user = await authenticateRequest(c.req.raw.headers);
@@ -246,4 +313,56 @@ function extensionFromMime(mime: string) {
   if (mime === "image/webp") return ".webp";
   if (mime === "image/gif") return ".gif";
   return ".jpg";
+}
+
+function verifyDigiflazzWebhook(rawBody: string, signature: string) {
+  if (!env.topupWebhookSecret) {
+    return true;
+  }
+  if (!signature.startsWith("sha1=")) return false;
+  const expected = `sha1=${createHmac("sha1", env.topupWebhookSecret).update(rawBody).digest("hex")}`;
+  try {
+    const actualBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+    return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+  } catch {
+    return false;
+  }
+}
+
+function parseDigiflazzWebhook(rawBody: string): {
+  referenceId: string;
+  status: "success" | "processing" | "failed";
+  topupReference: string | null;
+  message: string | null;
+} | null {
+  try {
+    const parsed = JSON.parse(rawBody) as {
+      data?: {
+        ref_id?: unknown;
+        status?: unknown;
+        sn?: unknown;
+        message?: unknown;
+        rc?: unknown;
+      };
+    };
+    const referenceId = typeof parsed.data?.ref_id === "string" ? parsed.data.ref_id : null;
+    if (!referenceId) return null;
+    const rawStatus = typeof parsed.data?.status === "string" ? parsed.data.status.toLowerCase() : "";
+    const rc = typeof parsed.data?.rc === "string" ? parsed.data.rc : "";
+    const status =
+      rc === "00" || rawStatus === "sukses" || rawStatus === "success"
+        ? "success"
+        : rc === "03" || rawStatus === "pending"
+          ? "processing"
+          : "failed";
+    return {
+      referenceId,
+      status,
+      topupReference: typeof parsed.data?.sn === "string" && parsed.data.sn ? parsed.data.sn : referenceId,
+      message: typeof parsed.data?.message === "string" ? parsed.data.message : null,
+    };
+  } catch {
+    return null;
+  }
 }
