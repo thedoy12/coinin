@@ -228,12 +228,17 @@ function getAxiosStatus(error: unknown) {
 }
 
 function getAxiosResponseData(error: unknown) {
-  return axios.isAxiosError(error) ? error.response?.data : undefined;
+  if (!axios.isAxiosError(error)) return undefined;
+  return error.response?.data ?? {
+    message: error.message,
+    code: error.code,
+    name: error.name,
+  };
 }
 
 function getErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
-    return getProviderMessage(error.response?.data) || error.message;
+    return getProviderMessage(error.response?.data) || error.message || error.code || "HataMarket request failed";
   }
   return error instanceof Error ? error.message : "Unknown error";
 }
@@ -247,11 +252,14 @@ function isProviderSuccess(data: unknown) {
 }
 
 function getProviderMessage(data: unknown) {
+  if (typeof data === "string") return data;
   if (typeof data !== "object" || data === null) return "";
-  const root = data as { msg?: unknown; message?: unknown };
+  const root = data as { msg?: unknown; message?: unknown; error?: unknown };
   return typeof root.msg === "string"
     ? root.msg
     : typeof root.message === "string"
       ? root.message
-      : "";
+      : typeof root.error === "string"
+        ? root.error
+        : "";
 }
