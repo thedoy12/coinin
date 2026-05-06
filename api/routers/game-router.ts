@@ -3,7 +3,7 @@ import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games } from "@db/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { getPublicCatalogThumbnail, publicCatalogSlugs, publicSafeGameFilter } from "../lib/catalog-safety";
+import { getPublicCatalogThumbnail, publicSafeGameFilter } from "../lib/catalog-safety";
 
 const featuredGameSlugs = [
   "mobile-legends",
@@ -26,8 +26,8 @@ export const gameRouter = createRouter({
     return db
       .select()
       .from(games)
-      .where(and(eq(games.isActive, 1), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
-      .orderBy(sql`array_position(ARRAY[${sql.join(publicCatalogSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`)
+      .where(and(eq(games.isActive, 1), publicSafeGameFilter()))
+      .orderBy(games.name)
       .then(withPublicThumbnails);
   }),
 
@@ -36,7 +36,7 @@ export const gameRouter = createRouter({
     return db
       .select()
       .from(games)
-      .where(and(eq(games.isActive, 1), inArray(games.slug, featuredGameSlugs), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
+      .where(and(eq(games.isActive, 1), inArray(games.slug, featuredGameSlugs), publicSafeGameFilter()))
       .orderBy(sql`array_position(ARRAY[${sql.join(featuredGameSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`)
       .then(withPublicThumbnails);
   }),
@@ -48,7 +48,7 @@ export const gameRouter = createRouter({
       const result = await db
         .select()
         .from(games)
-        .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
+        .where(and(eq(games.slug, input.slug), eq(games.isActive, 1), publicSafeGameFilter()))
         .limit(1);
       return result[0] ? withPublicThumbnail(result[0]) : null;
     }),

@@ -3,12 +3,11 @@ import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { auditLogs, transactions, games, products, providerApiLogs, users } from "@db/schema";
-import { and, desc, eq, sql, count, inArray } from "drizzle-orm";
+import { and, desc, eq, sql, count } from "drizzle-orm";
 import { writeAuditLog } from "../lib/audit";
 import { hashPassword } from "../lib/password";
 import {
   isSensitiveCatalogText,
-  publicCatalogSlugs,
   publicSafeGameFilter,
   publicSafeProductFilter,
 } from "../lib/catalog-safety";
@@ -84,7 +83,6 @@ export const adminRouter = createRouter({
       .where(and(
         eq(products.isActive, 1),
         eq(games.isActive, 1),
-        inArray(games.slug, publicCatalogSlugs),
         publicSafeGameFilter(),
         publicSafeProductFilter(),
       ));
@@ -92,7 +90,7 @@ export const adminRouter = createRouter({
     const activeGames = await db
       .select({ count: count() })
       .from(games)
-      .where(and(eq(games.isActive, 1), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()));
+      .where(and(eq(games.isActive, 1), publicSafeGameFilter()));
 
     const recentTransactions = await db
       .select({
@@ -133,7 +131,6 @@ export const adminRouter = createRouter({
       .from(products)
       .innerJoin(games, eq(products.gameId, games.id))
       .where(and(
-        inArray(games.slug, publicCatalogSlugs),
         publicSafeGameFilter(),
         publicSafeProductFilter(),
       ))
@@ -151,8 +148,8 @@ export const adminRouter = createRouter({
     return db
       .select()
       .from(games)
-      .where(and(inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
-      .orderBy(sql`array_position(ARRAY[${sql.join(publicCatalogSlugs.map((slug) => sql`${slug}`), sql`, `)}], ${games.slug})`);
+      .where(publicSafeGameFilter())
+      .orderBy(games.name);
   }),
 
   users: adminQuery.query(async () => {
@@ -481,7 +478,7 @@ export const adminRouter = createRouter({
       const targetGame = await db
         .select()
         .from(games)
-        .where(and(eq(games.id, input.gameId), inArray(games.slug, publicCatalogSlugs), publicSafeGameFilter()))
+        .where(and(eq(games.id, input.gameId), publicSafeGameFilter()))
         .limit(1);
       if (!targetGame[0]) {
         throw new TRPCError({
