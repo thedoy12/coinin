@@ -1,6 +1,6 @@
 # CoinIn - Game Top Up Platform
 
-Platform top-up game fullstack dengan integrasi payment gateway dan API top-up otomatis.
+Platform top-up game fullstack dengan integrasi pembayaran dan top-up otomatis.
 
 ## Tech Stack
 
@@ -8,8 +8,8 @@ Platform top-up game fullstack dengan integrasi payment gateway dan API top-up o
 - **Backend**: Hono + tRPC 11.x (end-to-end type safety)
 - **Database**: Drizzle ORM + PostgreSQL
 - **Auth**: Username/email + password, session JWT, role admin
-- **Payment**: Tripay
-- **Top-up API**: Digiflazz
+- **Payment**: Generic payment provider
+- **Top-up**: Generic top-up provider
 
 ## Cara Menjalankan Project
 
@@ -24,17 +24,19 @@ npm install
 File `.env` sudah tersedia dengan konfigurasi default. Sesuaikan bagian berikut:
 
 ```env
-# Top-up API (Digiflazz)
-TOPUP_API_URL=https://api.digiflazz.com/v1
-DIGIFLAZZ_USERNAME=YOUR_USERNAME
-DIGIFLAZZ_API_KEY=YOUR_API_KEY
+# Top-up Provider
+TOPUP_API_URL=YOUR_TOPUP_API_URL
+TOPUP_API_USERNAME=YOUR_TOPUP_USERNAME
+TOPUP_API_SECRET=YOUR_TOPUP_SECRET
+TOPUP_WEBHOOK_SECRET=YOUR_TOPUP_WEBHOOK_SECRET
+TOPUP_WEBHOOK_URL=https://your-domain.com/api/provider-callback
 
-# Payment Gateway (Tripay)
-TRIPAY_MERCHANT_CODE=YOUR_MERCHANT_CODE
-TRIPAY_API_KEY=YOUR_API_KEY
-TRIPAY_PRIVATE_KEY=YOUR_PRIVATE_KEY
-TRIPAY_PAYMENT_METHOD=QRIS2
-PAYMENT_API_URL=https://tripay.co.id/api
+# Payment Provider
+PAYMENT_MERCHANT_ID=YOUR_MERCHANT_ID
+PAYMENT_API_KEY=YOUR_PAYMENT_API_KEY
+PAYMENT_SECRET_KEY=YOUR_PAYMENT_SECRET
+PAYMENT_METHOD=QRIS
+PAYMENT_API_URL=YOUR_PAYMENT_API_URL
 ```
 
 ### 3. Setup Database
@@ -89,7 +91,7 @@ npm start
 ### HTTP Endpoints
 
 - `POST /api/callback` - Handle payment callback dari gateway
-- `POST /api/provider-callback` - Handle webhook update transaksi dari Digiflazz
+- `POST /api/provider-callback` - Handle webhook update transaksi dari provider top-up
 - `GET /api/status/:referenceId` - Public status check
 
 ### Security
@@ -129,8 +131,8 @@ Harga dibulatkan ke atas ke kelipatan Rp100. Produk digital memakai markup lebih
 │   │   └── admin-router.ts
 │   ├── lib/              # Utilities
 │   │   ├── markup.ts
-│   │   ├── payment.ts    # Payment gateway integration
-│   │   └── topup.ts      # Top-up API integration
+│   │   ├── payment.ts    # Payment integration
+│   │   └── topup.ts      # Top-up provider integration
 │   ├── boot.ts           # Hono server entry
 │   ├── router.ts         # tRPC app router
 │   └── middleware.ts     # Auth middleware
@@ -191,10 +193,10 @@ Harga dibulatkan ke atas ke kelipatan Rp100. Produk digital memakai markup lebih
 - `status` - Status transaksi (pending/processing/success/failed)
 - `paymentStatus` - Status pembayaran (unpaid/paid/expired/failed)
 - `paymentMethod` - Metode pembayaran
-- `paymentReference` - Reference dari payment gateway
-- `topupStatus` - Status top-up API
-- `topupReference` - Reference dari top-up API
-- `topupResponse` - Response dari top-up API
+- `paymentReference` - Reference dari sistem pembayaran
+- `topupStatus` - Status top-up
+- `topupReference` - Reference dari sistem top-up
+- `topupResponse` - Response dari sistem top-up
 - `customerName`, `customerEmail`, `customerPhone` - Data kontak pelanggan
 - `retryCount`, `lastError` - Tracking retry top-up dan error terakhir
 - `expiresAt`, `paidAt`, `completedAt` - Timestamp operasional transaksi

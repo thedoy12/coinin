@@ -1,12 +1,12 @@
-import { syncCatalogFromDigiflazz } from "../api/lib/catalog-sync";
+import { syncCatalogFromProvider } from "../api/lib/catalog-sync";
 
 const shouldApply = process.argv.includes("--apply");
 const onlyActive = !process.argv.includes("--include-inactive");
 const shouldPrune = !process.argv.includes("--no-prune");
 
 async function main() {
-  console.log(`Sync Digiflazz products (${shouldApply ? "apply" : "dry-run"})...`);
-  const result = await syncCatalogFromDigiflazz({
+  console.log(`Sync provider products (${shouldApply ? "apply" : "dry-run"})...`);
+  const result = await syncCatalogFromProvider({
     apply: shouldApply,
     onlyActive,
     prune: shouldPrune,

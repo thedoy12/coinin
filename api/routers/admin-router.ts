@@ -2,10 +2,10 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
-import { auditLogs, transactions, games, products, providerApiLogs, users } from "@db/schema";
-import { and, desc, eq, sql, count } from "drizzle-orm";
+import { auditLogs, transactions, games, products, providerApiLogs, users, popupSettings } from "@db/schema";
+import { and, desc, eq, sql, count, lt, ne, or } from "drizzle-orm";
 import { writeAuditLog } from "../lib/audit";
-import { hashPassword } from "../lib/password";
+import { hashPassword, verifyPassword } from "../lib/password";
 import {
   isSensitiveCatalogText,
   publicSafeGameFilter,
@@ -18,11 +18,17 @@ import {
   syncProcessingTopups,
   syncPaymentAndFulfill,
 } from "../lib/transaction";
-import { syncCatalogFromDigiflazz } from "../lib/catalog-sync";
+import { syncCatalogFromProvider } from "../lib/catalog-sync";
 
 const transactionStatus = z.enum(["pending", "processing", "success", "failed"]);
 const productType = z.enum(["general", "membership"]);
 const userRole = z.enum(["user", "admin"]);
+const cleanupTarget = z.enum([
+  "staleTransactions",
+  "providerApiLogs",
+  "auditLogs",
+  "inactiveUsers",
+]);
 const gameInput = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(255),
@@ -44,6 +50,16 @@ const importProductRow = z.object({
   instructions: z.string().optional(),
   requiresZoneId: z.boolean().optional(),
   productType: productType.optional(),
+});
+
+const popupSettingsInput = z.object({
+  isActive: z.boolean(),
+  title: z.string().trim().max(120),
+  description: z.string().trim().max(600),
+  imageUrl: z.string().trim().max(500).optional(),
+  buttonText: z.string().trim().min(1).max(60),
+  buttonUrl: z.string().trim().min(1).max(500),
+  displayDelayMs: z.number().int().min(0).max(10000),
 });
 
 export const adminRouter = createRouter({
@@ -211,6 +227,27 @@ export const adminRouter = createRouter({
       .limit(200);
   }),
 
+  popupSettings: adminQuery.query(async () => {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(popupSettings)
+      .where(eq(popupSettings.id, 1))
+      .limit(1);
+
+    return rows[0] ?? {
+      id: 1,
+      isActive: 0,
+      title: "Promo CoinIn",
+      description: "Top up game favorit kamu lebih cepat dengan pembayaran praktis.",
+      imageUrl: null,
+      buttonText: "Top Up Sekarang",
+      buttonUrl: "#game-store",
+      displayDelayMs: 1200,
+      updatedAt: new Date(),
+    };
+  }),
+
   allTransactions: adminQuery.query(async () => {
     const db = getDb();
     const rows = await db
@@ -328,16 +365,95 @@ export const adminRouter = createRouter({
   }),
 
   syncCatalog: adminQuery.mutation(async ({ ctx }) => {
-    const result = await syncCatalogFromDigiflazz({ apply: true, onlyActive: true, prune: true });
+    const result = await syncCatalogFromProvider({ apply: true, onlyActive: true, prune: true });
     await writeAuditLog({
       actorUserId: ctx.user.id,
       action: "catalog.sync_provider",
       entityType: "catalog",
-      entityId: "digiflazz",
+      entityId: "topup_provider",
       after: result,
     });
     return { success: true, ...result };
   }),
+
+  updatePopupSettings: adminQuery
+    .input(popupSettingsInput)
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const existing = await db
+        .select()
+        .from(popupSettings)
+        .where(eq(popupSettings.id, 1))
+        .limit(1);
+      const values = {
+        id: 1,
+        isActive: input.isActive ? 1 : 0,
+        title: input.title,
+        description: input.description,
+        imageUrl: input.imageUrl || null,
+        buttonText: input.buttonText,
+        buttonUrl: input.buttonUrl,
+        displayDelayMs: input.displayDelayMs,
+        updatedAt: new Date(),
+      };
+
+      await db
+        .insert(popupSettings)
+        .values(values)
+        .onConflictDoUpdate({
+          target: popupSettings.id,
+          set: values,
+        });
+
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        action: "popup.update",
+        entityType: "popup_settings",
+        entityId: "1",
+        before: existing[0],
+        after: values,
+      });
+
+      return { success: true };
+    }),
+
+  cleanupDatabase: adminQuery
+    .input(
+      z.object({
+        target: cleanupTarget,
+        olderThanDays: z.number().int().min(1).max(3650),
+        password: z.string().min(1).max(100),
+        confirmation: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (input.confirmation !== "HAPUS") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Ketik HAPUS untuk konfirmasi.",
+        });
+      }
+
+      await assertAdminPassword(ctx.user.id, input.password);
+
+      const cutoff = new Date(Date.now() - input.olderThanDays * 24 * 60 * 60 * 1000);
+      const result = await runCleanup(input.target, cutoff);
+
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        action: "database.cleanup",
+        entityType: "database",
+        entityId: input.target,
+        after: {
+          target: input.target,
+          olderThanDays: input.olderThanDays,
+          cutoff,
+          deleted: result.deleted,
+        },
+      });
+
+      return result;
+    }),
 
   updateUserRole: adminQuery
     .input(z.object({ userId: z.number().int().positive(), role: userRole }))
@@ -718,6 +834,70 @@ export const adminRouter = createRouter({
       return { success: true };
     }),
 });
+
+async function assertAdminPassword(userId: number, password: string) {
+  const db = getDb();
+  const currentUser = await db
+    .select({
+      id: users.id,
+      passwordHash: users.passwordHash,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!currentUser[0] || !verifyPassword(password, currentUser[0].passwordHash)) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Password admin salah.",
+    });
+  }
+}
+
+async function runCleanup(target: z.infer<typeof cleanupTarget>, cutoff: Date) {
+  const db = getDb();
+
+  if (target === "staleTransactions") {
+    const deleted = await db
+      .delete(transactions)
+      .where(and(
+        lt(transactions.createdAt, cutoff),
+        or(
+          eq(transactions.status, "failed"),
+          eq(transactions.paymentStatus, "expired"),
+          eq(transactions.paymentStatus, "failed"),
+          eq(transactions.paymentStatus, "unpaid"),
+        )
+      ))
+      .returning({ id: transactions.id });
+    return { success: true, deleted: deleted.length };
+  }
+
+  if (target === "providerApiLogs") {
+    const deleted = await db
+      .delete(providerApiLogs)
+      .where(lt(providerApiLogs.createdAt, cutoff))
+      .returning({ id: providerApiLogs.id });
+    return { success: true, deleted: deleted.length };
+  }
+
+  if (target === "auditLogs") {
+    const deleted = await db
+      .delete(auditLogs)
+      .where(lt(auditLogs.createdAt, cutoff))
+      .returning({ id: auditLogs.id });
+    return { success: true, deleted: deleted.length };
+  }
+
+  const deleted = await db
+    .delete(users)
+    .where(and(
+      lt(users.lastSignInAt, cutoff),
+      ne(users.role, "admin"),
+    ))
+    .returning({ id: users.id });
+  return { success: true, deleted: deleted.length };
+}
 
 function buildManualTransactionStatusUpdate(
   tx: typeof transactions.$inferSelect,

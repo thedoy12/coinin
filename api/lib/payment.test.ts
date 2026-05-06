@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 describe("verifyPaymentCallback", () => {
   beforeEach(() => {
     vi.resetModules();
-    process.env.TRIPAY_PRIVATE_KEY = "test-private-key";
+    process.env.PAYMENT_SECRET_KEY = "test-private-key";
   });
 
   it("accepts a valid raw body signature", async () => {

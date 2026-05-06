@@ -108,7 +108,7 @@ export function PrivacyPolicyPage() {
       </InfoSection>
       <InfoSection title="Berbagi Data">
         <p>
-          CoinIn dapat membagikan data yang diperlukan kepada payment gateway, penyedia layanan top up, atau pihak pendukung teknis hanya sejauh dibutuhkan untuk memproses transaksi dan menjaga layanan tetap berjalan.
+          CoinIn dapat membagikan data yang diperlukan kepada sistem pembayaran, penyedia layanan top up, atau pihak pendukung teknis hanya sejauh dibutuhkan untuk memproses transaksi dan menjaga layanan tetap berjalan.
         </p>
       </InfoSection>
       <InfoSection title="Keamanan Dan Penyimpanan">
@@ -159,7 +159,7 @@ export function TermsPage() {
       </InfoSection>
       <InfoSection title="Penyalahgunaan Layanan">
         <p>
-          CoinIn berhak membatasi transaksi, menolak order, atau menahan proses sementara jika ditemukan indikasi penyalahgunaan, aktivitas tidak wajar, pelanggaran hukum, atau permintaan verifikasi tambahan dari payment gateway/provider.
+          CoinIn berhak membatasi transaksi, menolak order, atau menahan proses sementara jika ditemukan indikasi penyalahgunaan, aktivitas tidak wajar, pelanggaran hukum, atau permintaan verifikasi tambahan dari sistem pembayaran atau penyedia layanan.
         </p>
       </InfoSection>
     </InfoShell>

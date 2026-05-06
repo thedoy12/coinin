@@ -24,6 +24,8 @@ import {
   RotateCcw,
   Server,
   ShieldAlert,
+  Sparkles,
+  Trash2,
   Upload,
   Users,
   Wallet,
@@ -32,6 +34,7 @@ import { toast } from "sonner";
 
 type StatusTone = "success" | "failed" | "processing" | "pending";
 type ProductType = "general" | "membership";
+type CleanupTarget = "staleTransactions" | "providerApiLogs" | "auditLogs" | "inactiveUsers";
 
 const emptyGameForm = {
   name: "",
@@ -53,6 +56,43 @@ const emptyProductForm = {
   isActive: true,
 };
 
+const emptyPopupForm = {
+  isActive: false,
+  title: "Promo CoinIn",
+  description: "Top up game favorit kamu lebih cepat dengan pembayaran praktis.",
+  imageUrl: "",
+  buttonText: "Top Up Sekarang",
+  buttonUrl: "#game-store",
+  displayDelayMs: "1200",
+};
+
+const cleanupTargets: Array<{
+  value: CleanupTarget;
+  label: string;
+  detail: string;
+}> = [
+  {
+    value: "staleTransactions",
+    label: "Transaksi gagal/kadaluarsa",
+    detail: "Menghapus transaksi lama yang failed, expired, failed payment, atau unpaid.",
+  },
+  {
+    value: "providerApiLogs",
+    label: "Log API provider",
+    detail: "Menghapus log request/response provider pembayaran dan top-up yang sudah lama.",
+  },
+  {
+    value: "auditLogs",
+    label: "Audit log",
+    detail: "Menghapus audit log lama, lalu menyimpan log baru untuk aksi cleanup ini.",
+  },
+  {
+    value: "inactiveUsers",
+    label: "User non-admin tidak aktif",
+    detail: "Menghapus akun user biasa yang lama tidak login. Admin tidak ikut dihapus.",
+  },
+];
+
 export default function AdminDashboard() {
   useSEO({
     title: "Owner Console | CoinIn",
@@ -65,11 +105,18 @@ export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [gameForm, setGameForm] = useState(emptyGameForm);
   const [productForm, setProductForm] = useState(emptyProductForm);
+  const [popupForm, setPopupForm] = useState(emptyPopupForm);
   const [productImportFile, setProductImportFile] = useState<File | null>(null);
   const [productImportCount, setProductImportCount] = useState<number | null>(null);
   const [transactionSearch, setTransactionSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [apiLogSearch, setApiLogSearch] = useState("");
+  const [cleanupForm, setCleanupForm] = useState({
+    target: "staleTransactions" as CleanupTarget,
+    olderThanDays: "30",
+    password: "",
+    confirmation: "",
+  });
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== "admin")) {
@@ -87,6 +134,21 @@ export default function AdminDashboard() {
   const gamesQuery = trpc.admin.games.useQuery(undefined, { enabled });
   const auditQuery = trpc.admin.auditLogs.useQuery(undefined, { enabled });
   const providerApiLogsQuery = trpc.admin.providerApiLogs.useQuery(undefined, { enabled });
+  const popupSettingsQuery = trpc.admin.popupSettings.useQuery(undefined, { enabled });
+
+  useEffect(() => {
+    const popup = popupSettingsQuery.data;
+    if (!popup) return;
+    setPopupForm({
+      isActive: popup.isActive === 1,
+      title: popup.title,
+      description: popup.description,
+      imageUrl: popup.imageUrl ?? "",
+      buttonText: popup.buttonText,
+      buttonUrl: popup.buttonUrl,
+      displayDelayMs: popup.displayDelayMs.toString(),
+    });
+  }, [popupSettingsQuery.data]);
 
   const refreshAll = () => {
     statsQuery.refetch();
@@ -97,6 +159,7 @@ export default function AdminDashboard() {
     gamesQuery.refetch();
     auditQuery.refetch();
     providerApiLogsQuery.refetch();
+    popupSettingsQuery.refetch();
   };
 
   const updateStatus = trpc.admin.updateStatus.useMutation({
@@ -204,6 +267,27 @@ export default function AdminDashboard() {
   const updateGame = trpc.admin.updateGame.useMutation({
     onSuccess: () => {
       toast.success("Game diperbarui");
+      refreshAll();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const updatePopupSettings = trpc.admin.updatePopupSettings.useMutation({
+    onSuccess: () => {
+      toast.success("Setting popup disimpan");
+      refreshAll();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const cleanupDatabase = trpc.admin.cleanupDatabase.useMutation({
+    onSuccess: (result) => {
+      toast.success(`${result.deleted} data berhasil dihapus`);
+      setCleanupForm((current) => ({
+        ...current,
+        password: "",
+        confirmation: "",
+      }));
       refreshAll();
     },
     onError: (error) => toast.error(error.message),
@@ -359,6 +443,51 @@ export default function AdminDashboard() {
     createGame.mutate(gameForm);
   };
 
+  const cleanupSubmit = () => {
+    const olderThanDays = Number(cleanupForm.olderThanDays);
+    if (!Number.isInteger(olderThanDays) || olderThanDays < 1 || olderThanDays > 3650) {
+      toast.error("Umur data harus 1 sampai 3650 hari");
+      return;
+    }
+    if (!cleanupForm.password) {
+      toast.error("Masukkan password admin");
+      return;
+    }
+    if (cleanupForm.confirmation !== "HAPUS") {
+      toast.error("Ketik HAPUS untuk konfirmasi");
+      return;
+    }
+
+    cleanupDatabase.mutate({
+      target: cleanupForm.target,
+      olderThanDays,
+      password: cleanupForm.password,
+      confirmation: cleanupForm.confirmation,
+    });
+  };
+
+  const savePopupSettings = () => {
+    const displayDelayMs = Number(popupForm.displayDelayMs);
+    if (!Number.isInteger(displayDelayMs) || displayDelayMs < 0 || displayDelayMs > 10000) {
+      toast.error("Delay popup harus 0 sampai 10000 ms");
+      return;
+    }
+    if (!popupForm.title.trim()) {
+      toast.error("Judul popup wajib diisi");
+      return;
+    }
+
+    updatePopupSettings.mutate({
+      isActive: popupForm.isActive,
+      title: popupForm.title,
+      description: popupForm.description,
+      imageUrl: popupForm.imageUrl || undefined,
+      buttonText: popupForm.buttonText,
+      buttonUrl: popupForm.buttonUrl,
+      displayDelayMs,
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -402,8 +531,10 @@ export default function AdminDashboard() {
           <TabsTrigger value="accounts">Akun</TabsTrigger>
           <TabsTrigger value="games">Game</TabsTrigger>
           <TabsTrigger value="products">Produk</TabsTrigger>
+          <TabsTrigger value="popup">Popup</TabsTrigger>
           <TabsTrigger value="api-logs">API Log</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -661,6 +792,105 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="popup">
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-cyan-300" />
+                Popup Landing Page
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={popupForm.isActive ? "default" : "outline"}
+                  onClick={() => setPopupForm({ ...popupForm, isActive: !popupForm.isActive })}
+                >
+                  {popupForm.isActive ? "Popup Aktif" : "Popup Nonaktif"}
+                </Button>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Judul">
+                  <Input
+                    value={popupForm.title}
+                    onChange={(event) => setPopupForm({ ...popupForm, title: event.target.value })}
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </Field>
+                <Field label="Delay tampil (ms)">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10000}
+                    value={popupForm.displayDelayMs}
+                    onChange={(event) => setPopupForm({ ...popupForm, displayDelayMs: event.target.value })}
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </Field>
+                <div className="md:col-span-2">
+                  <Field label="Deskripsi">
+                    <Textarea
+                      value={popupForm.description}
+                      onChange={(event) => setPopupForm({ ...popupForm, description: event.target.value })}
+                      className="bg-slate-950 border-slate-700 text-white"
+                    />
+                  </Field>
+                </div>
+                <div className="md:col-span-2">
+                  <Field label="URL Gambar">
+                    <Input
+                      value={popupForm.imageUrl}
+                      onChange={(event) => setPopupForm({ ...popupForm, imageUrl: event.target.value })}
+                      placeholder="/promo.jpg atau https://..."
+                      className="bg-slate-950 border-slate-700 text-white"
+                    />
+                  </Field>
+                </div>
+                <Field label="Teks Tombol">
+                  <Input
+                    value={popupForm.buttonText}
+                    onChange={(event) => setPopupForm({ ...popupForm, buttonText: event.target.value })}
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </Field>
+                <Field label="URL Tombol">
+                  <Input
+                    value={popupForm.buttonUrl}
+                    onChange={(event) => setPopupForm({ ...popupForm, buttonUrl: event.target.value })}
+                    placeholder="#game-store atau /games"
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </Field>
+              </div>
+
+              <div className="overflow-hidden rounded-md border border-cyan-300/20 bg-slate-950">
+                {popupForm.imageUrl && (
+                  <div className="aspect-[16/9] bg-slate-900">
+                    <img src={popupForm.imageUrl} alt={popupForm.title} className="h-full w-full object-cover" />
+                  </div>
+                )}
+                <div className="p-5">
+                  <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-200">Preview</p>
+                  <h3 className="mt-2 text-2xl font-black uppercase italic text-white">{popupForm.title || "Judul Popup"}</h3>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">{popupForm.description || "Deskripsi popup akan tampil di sini."}</p>
+                  <Button className="mt-4 rounded-none bg-cyan-300 font-black uppercase text-slate-950 hover:bg-cyan-200">
+                    {popupForm.buttonText || "Tombol"}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+                disabled={updatePopupSettings.isPending}
+                onClick={savePopupSettings}
+              >
+                {updatePopupSettings.isPending ? "Menyimpan..." : "Simpan Popup"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="audit">
           <Card className="bg-slate-900/50 border-slate-800">
             <CardHeader><CardTitle className="text-white">Audit Log</CardTitle></CardHeader>
@@ -699,6 +929,80 @@ export default function AdminDashboard() {
                 className="max-w-xl bg-slate-950 border-slate-700 text-white"
               />
               <ProviderApiLogTable rows={filteredApiLogs} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="maintenance">
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-red-400" />
+                Cleanup Database
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label="Data yang dihapus">
+                  <Select
+                    value={cleanupForm.target}
+                    onValueChange={(value) => setCleanupForm({ ...cleanupForm, target: value as CleanupTarget })}
+                  >
+                    <SelectTrigger className="w-full bg-slate-950 border-slate-700 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cleanupTargets.map((target) => (
+                        <SelectItem key={target.value} value={target.value}>
+                          {target.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Lebih lama dari">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={3650}
+                    value={cleanupForm.olderThanDays}
+                    onChange={(event) => setCleanupForm({ ...cleanupForm, olderThanDays: event.target.value })}
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </Field>
+                <Field label="Password admin">
+                  <Input
+                    type="password"
+                    value={cleanupForm.password}
+                    onChange={(event) => setCleanupForm({ ...cleanupForm, password: event.target.value })}
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </Field>
+              </div>
+
+              <div className="rounded-md border border-red-500/20 bg-red-500/10 p-4">
+                <p className="text-sm text-red-200">
+                  {cleanupTargets.find((target) => target.value === cleanupForm.target)?.detail}
+                </p>
+                <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                  <Field label="Konfirmasi">
+                    <Input
+                      value={cleanupForm.confirmation}
+                      onChange={(event) => setCleanupForm({ ...cleanupForm, confirmation: event.target.value })}
+                      placeholder="Ketik HAPUS"
+                      className="bg-slate-950 border-red-500/30 text-white"
+                    />
+                  </Field>
+                  <Button
+                    className="bg-red-500 text-white hover:bg-red-600"
+                    disabled={cleanupDatabase.isPending}
+                    onClick={cleanupSubmit}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {cleanupDatabase.isPending ? "Menghapus..." : "Hapus Data"}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -895,7 +1199,7 @@ function ProviderApiLogTable({ rows }: { rows: ProviderApiLogRow[] }) {
           {!rows.length && (
             <TableRow>
               <TableCell colSpan={6} className="text-center text-slate-500 py-8">
-                Belum ada log API provider. Log akan muncul setelah order paid dikirim ke Digiflazz.
+                Belum ada log API provider. Log akan muncul setelah order paid dikirim ke provider top-up.
               </TableCell>
             </TableRow>
           )}

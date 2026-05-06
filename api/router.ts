@@ -5,6 +5,7 @@ import { productRouter } from "./routers/product-router";
 import { orderRouter } from "./routers/order-router";
 import { paymentRouter } from "./routers/payment-router";
 import { adminRouter } from "./routers/admin-router";
+import { popupRouter } from "./routers/popup-router";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
@@ -13,6 +14,7 @@ export const appRouter = createRouter({
   product: productRouter,
   order: orderRouter,
   payment: paymentRouter,
+  popup: popupRouter,
   admin: adminRouter,
 });
 

@@ -134,7 +134,7 @@ app.get("/api/provider-callback", (c) =>
   c.json({
     ok: true,
     endpoint: "CoinIn provider callback",
-    provider: "digiflazz",
+    provider: "topup_provider",
     method: "POST",
   })
 );
@@ -142,14 +142,14 @@ app.get("/api/provider-callback", (c) =>
 app.post("/api/provider-callback", async (c) => {
   try {
     const rawBody = await c.req.text();
-    const event = c.req.header("x-digiflazz-event") || "";
+    const event = c.req.header("x-provider-event") || "";
     const signature = c.req.header("x-hub-signature") || "";
 
-    if (!verifyDigiflazzWebhook(rawBody, signature)) {
+    if (!verifyTopupProviderWebhook(rawBody, signature)) {
       return c.json({ error: "Invalid provider signature" }, 400);
     }
 
-    const payload = parseDigiflazzWebhook(rawBody);
+    const payload = parseTopupProviderWebhook(rawBody);
     if (!payload?.referenceId) {
       return c.json({ error: "Missing provider reference" }, 400);
     }
@@ -315,7 +315,7 @@ function extensionFromMime(mime: string) {
   return ".jpg";
 }
 
-function verifyDigiflazzWebhook(rawBody: string, signature: string) {
+function verifyTopupProviderWebhook(rawBody: string, signature: string) {
   if (!env.topupWebhookSecret) {
     return true;
   }
@@ -330,7 +330,7 @@ function verifyDigiflazzWebhook(rawBody: string, signature: string) {
   }
 }
 
-function parseDigiflazzWebhook(rawBody: string): {
+function parseTopupProviderWebhook(rawBody: string): {
   referenceId: string;
   status: "success" | "processing" | "failed";
   topupReference: string | null;

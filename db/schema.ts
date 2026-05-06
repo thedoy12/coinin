@@ -182,3 +182,21 @@ export const providerApiLogs = pgTable(
 
 export type ProviderApiLog = typeof providerApiLogs.$inferSelect;
 export type InsertProviderApiLog = typeof providerApiLogs.$inferInsert;
+
+export const popupSettings = pgTable("popup_settings", {
+  id: serial("id").primaryKey(),
+  isActive: integer("isActive").default(0).notNull(),
+  title: varchar("title", { length: 120 }).default("").notNull(),
+  description: text("description").default("").notNull(),
+  imageUrl: varchar("imageUrl", { length: 500 }),
+  buttonText: varchar("buttonText", { length: 60 }).default("Lihat Promo").notNull(),
+  buttonUrl: varchar("buttonUrl", { length: 500 }).default("#game-store").notNull(),
+  displayDelayMs: integer("displayDelayMs").default(1200).notNull(),
+  updatedAt: timestamp("updatedAt")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export type PopupSettings = typeof popupSettings.$inferSelect;
+export type InsertPopupSettings = typeof popupSettings.$inferInsert;

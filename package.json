@@ -17,7 +17,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "sync:digiflazz": "tsx scripts/sync-digiflazz-products.ts",
+    "sync:provider": "tsx scripts/sync-provider-products.ts",
     "cleanup:second-games": "tsx scripts/cleanup-second-games.ts"
   },
   "dependencies": {

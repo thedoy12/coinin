@@ -17,7 +17,7 @@ const topupApi = axios.create({
   validateStatus: (status) => status < 500,
 });
 
-type DigiflazzTopupResponse = {
+type TopupProviderResponse = {
   data?: {
     ref_id?: string;
     customer_no?: string;
@@ -44,10 +44,10 @@ export async function placeTopupOrder(params: {
   const payload = buildTransactionPayload(params);
 
   try {
-    const response = await topupApi.post<DigiflazzTopupResponse>(endpoint, payload);
+    const response = await topupApi.post<TopupProviderResponse>(endpoint, payload);
     const success = isProviderSuccess(response.data);
     await writeProviderApiLog({
-      provider: "digiflazz",
+      provider: "topup_provider",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
@@ -71,7 +71,7 @@ export async function placeTopupOrder(params: {
     };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "digiflazz",
+      provider: "topup_provider",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
@@ -111,7 +111,7 @@ export async function getTopupProfile() {
     const response = await topupApi.post(endpoint, payload);
     const success = response.status >= 200 && response.status < 300 && typeof response.data === "object" && response.data !== null;
     await writeProviderApiLog({
-      provider: "digiflazz",
+      provider: "topup_provider",
       method: "POST",
       endpoint,
       requestPayload: redactCredentials(payload),
@@ -131,7 +131,7 @@ export async function getTopupProfile() {
     return { success: true, data: response.data };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "digiflazz",
+      provider: "topup_provider",
       method: "POST",
       endpoint,
       requestPayload: redactCredentials(payload),
@@ -158,7 +158,7 @@ export async function getTopupServices() {
     const response = await topupApi.post(endpoint, payload);
     const success = response.status >= 200 && response.status < 300 && Array.isArray((response.data as { data?: unknown })?.data);
     await writeProviderApiLog({
-      provider: "digiflazz",
+      provider: "topup_provider",
       method: "POST",
       endpoint,
       requestPayload: redactCredentials(payload),
@@ -178,7 +178,7 @@ export async function getTopupServices() {
     return { success: true, data: response.data };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "digiflazz",
+      provider: "topup_provider",
       method: "POST",
       endpoint,
       requestPayload: redactCredentials(payload),
@@ -261,7 +261,7 @@ function getAxiosResponseData(error: unknown) {
 
 function getErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
-    return getProviderMessage(error.response?.data) || error.message || error.code || "Digiflazz request failed";
+    return getProviderMessage(error.response?.data) || error.message || error.code || "Top-up provider request failed";
   }
   return error instanceof Error ? error.message : "Unknown error";
 }

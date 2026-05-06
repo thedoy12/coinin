@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GameCard } from "@/components/GameCard";
@@ -31,7 +37,24 @@ export default function Home() {
   useHomeStructuredData();
 
   const [search, setSearch] = useState("");
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const { data: games, isLoading } = trpc.game.list.useQuery();
+  const { data: popup } = trpc.popup.active.useQuery();
+
+  useEffect(() => {
+    if (!popup) return;
+    const key = `coinin-popup:${new Date(popup.updatedAt).getTime()}`;
+    if (sessionStorage.getItem(key)) return;
+
+    const timeout = window.setTimeout(() => {
+      setIsPopupOpen(true);
+      sessionStorage.setItem(key, "shown");
+    }, popup.displayDelayMs);
+
+    return () => window.clearTimeout(timeout);
+  }, [popup]);
+
+  const closePopup = () => setIsPopupOpen(false);
 
   const filteredGames = games?.filter((game) => {
     const value = search.toLowerCase();
@@ -48,6 +71,50 @@ export default function Home() {
 
   return (
     <div className="pb-20">
+      {popup && (
+        <Dialog open={isPopupOpen} onOpenChange={setIsPopupOpen}>
+          <DialogContent className="overflow-hidden border-cyan-300/30 bg-slate-950 p-0 text-white sm:max-w-xl">
+            {popup.imageUrl && (
+              <div className="relative aspect-[16/9] bg-slate-900">
+                <img
+                  src={popup.imageUrl}
+                  alt={popup.title}
+                  className="h-full w-full object-cover"
+                  loading="eager"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
+              </div>
+            )}
+            <div className="p-6 sm:p-7">
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-200">CoinIn Update</p>
+              <DialogTitle className="mt-3 text-2xl font-black uppercase italic text-white sm:text-3xl">
+                {popup.title}
+              </DialogTitle>
+              {popup.description && (
+                <DialogDescription className="mt-3 text-sm leading-7 text-slate-300">
+                  {popup.description}
+                </DialogDescription>
+              )}
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a href={popup.buttonUrl} onClick={closePopup}>
+                  <Button className="rounded-none bg-cyan-300 font-black uppercase text-slate-950 hover:bg-cyan-200">
+                    {popup.buttonText}
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
+                <Button
+                  variant="outline"
+                  className="rounded-none border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-900"
+                  onClick={closePopup}
+                >
+                  Tutup
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
         <div className="hud-frame cinematic-stage min-h-[620px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
           <div className="relative z-10 flex min-h-[560px] flex-col">
@@ -327,7 +394,7 @@ function useHomeStructuredData() {
               name: "Metode pembayaran apa yang tersedia?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "CoinIn mendukung pembayaran QRIS, virtual account, dan e-wallet melalui payment gateway yang terintegrasi.",
+                text: "CoinIn mendukung pembayaran QRIS, virtual account, dan e-wallet melalui sistem pembayaran yang terintegrasi.",
               },
             },
             {

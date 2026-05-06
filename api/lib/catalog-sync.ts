@@ -5,7 +5,7 @@ import { getTopupServices } from "./topup";
 import { getDb } from "../queries/connection";
 import { getPublicCatalogThumbnail, isSensitiveCatalogText } from "./catalog-safety";
 
-type DigiflazzPriceListItem = {
+type ProviderPriceListItem = {
   product_name: string;
   category: string;
   brand: string;
@@ -63,7 +63,7 @@ const priorityGameSlugs = [
   "point-blank-via-id",
 ];
 
-export async function syncCatalogFromDigiflazz(options: {
+export async function syncCatalogFromProvider(options: {
   apply?: boolean;
   onlyActive?: boolean;
   prune?: boolean;
@@ -223,7 +223,7 @@ async function loadPriceListData() {
     return fallback;
   }
 
-  throw new Error(response.error || "Failed to fetch Digiflazz price list");
+  throw new Error(response.error || "Failed to fetch provider price list");
 }
 
 async function getCachedPriceListData() {
@@ -231,7 +231,7 @@ async function getCachedPriceListData() {
   const rows = await db
     .select({ responsePayload: providerApiLogs.responsePayload })
     .from(providerApiLogs)
-    .where(and(sql`${providerApiLogs.success} = 1`, sql`${providerApiLogs.provider} = 'digiflazz'`, sql`${providerApiLogs.endpoint} = '/price-list'`))
+    .where(and(sql`${providerApiLogs.success} = 1`, sql`${providerApiLogs.provider} = 'topup_provider'`, sql`${providerApiLogs.endpoint} = '/price-list'`))
     .orderBy(sql`${providerApiLogs.createdAt} desc`)
     .limit(1);
 
@@ -315,20 +315,20 @@ function chunks<T>(items: T[], size: number): T[][] {
   return result;
 }
 
-function extractServices(data: unknown): DigiflazzPriceListItem[] {
+function extractServices(data: unknown): ProviderPriceListItem[] {
   const items = typeof data === "object" && data !== null && Array.isArray((data as { data?: unknown }).data)
     ? (data as { data: unknown[] }).data
     : [];
   return items.filter(isService);
 }
 
-function isService(value: unknown): value is DigiflazzPriceListItem {
+function isService(value: unknown): value is ProviderPriceListItem {
   if (typeof value !== "object" || value === null) return false;
-  const row = value as Partial<DigiflazzPriceListItem>;
+  const row = value as Partial<ProviderPriceListItem>;
   return Boolean(row.product_name && row.brand && row.buyer_sku_code && row.price !== undefined);
 }
 
-function normalizeService(row: DigiflazzPriceListItem): NormalizedService {
+function normalizeService(row: ProviderPriceListItem): NormalizedService {
   const gameName = normalizeGameName(row.brand, row.product_name, row.category);
   const gameSlug = normalizeSlug(gameName);
   const priceModal = Number.parseInt(String(row.price), 10);
@@ -450,7 +450,7 @@ function isSensitiveCatalogService(row: NormalizedService) {
   return isSensitiveCatalogText(row.gameName, row.gameSlug, row.productName, row.providerCode);
 }
 
-function inferProductType(row: DigiflazzPriceListItem): "general" | "membership" {
+function inferProductType(row: ProviderPriceListItem): "general" | "membership" {
   const text = `${row.type} ${row.product_name} ${row.desc ?? ""}`.toLowerCase();
   if (
     /membership|member|weekly|monthly|pass|subscription|langganan|welkin|battle pass|season pass|starlight|twilight|growth plan/.test(text)

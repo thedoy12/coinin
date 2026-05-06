@@ -19,13 +19,13 @@ export type PaymentNotification = {
   status: "PAID" | "PENDING" | "EXPIRED" | "FAILED";
 };
 
-type TripayResponse<T> = {
+type PaymentProviderResponse<T> = {
   success: boolean;
   message?: string;
   data?: T;
 };
 
-type TripayTransaction = {
+type PaymentProviderTransaction = {
   reference: string;
   merchant_ref: string;
   payment_method?: string;
@@ -73,10 +73,10 @@ export async function createQrisPayment(params: {
   };
 
   try {
-    const response = await paymentApi.post<TripayResponse<TripayTransaction>>(endpoint, payload);
+    const response = await paymentApi.post<PaymentProviderResponse<PaymentProviderTransaction>>(endpoint, payload);
     const success = response.status >= 200 && response.status < 300 && response.data.success && response.data.data;
     await writeProviderApiLog({
-      provider: "tripay",
+      provider: "payment_provider",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
@@ -84,14 +84,14 @@ export async function createQrisPayment(params: {
       responsePayload: response.data,
       statusCode: response.status,
       success: Boolean(success),
-      error: success ? undefined : response.data.message || "Tripay payment request failed",
+      error: success ? undefined : response.data.message || "Payment request failed",
       durationMs: Date.now() - startedAt,
     });
 
     if (!success || !response.data.data) {
       return {
         success: false,
-        error: response.data.message || "Gagal membuat pembayaran Tripay",
+        error: response.data.message || "Gagal membuat pembayaran",
       };
     }
 
@@ -106,7 +106,7 @@ export async function createQrisPayment(params: {
     };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "tripay",
+      provider: "payment_provider",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
@@ -142,7 +142,7 @@ export function parsePaymentNotification(rawBody: string): PaymentNotification |
   return {
     referenceId: body.merchant_ref,
     providerReference: body.reference,
-    status: normalizeTripayStatus(body.status),
+    status: normalizePaymentProviderStatus(body.status),
   };
 }
 
@@ -150,12 +150,12 @@ export async function checkPaymentStatus(providerReference: string) {
   const endpoint = "/transaction/check-status";
   const startedAt = Date.now();
   try {
-    const response = await paymentApi.get<TripayResponse<TripayTransaction>>(endpoint, {
+    const response = await paymentApi.get<PaymentProviderResponse<PaymentProviderTransaction>>(endpoint, {
       params: { reference: providerReference },
     });
     const success = response.status >= 200 && response.status < 300 && response.data.success;
     await writeProviderApiLog({
-      provider: "tripay",
+      provider: "payment_provider",
       referenceId: providerReference,
       method: "GET",
       endpoint,
@@ -163,15 +163,15 @@ export async function checkPaymentStatus(providerReference: string) {
       responsePayload: response.data,
       statusCode: response.status,
       success,
-      error: success ? undefined : response.data.message || "Tripay status check failed",
+      error: success ? undefined : response.data.message || "Payment status check failed",
       durationMs: Date.now() - startedAt,
     });
     return success
       ? { success: true, data: response.data.data ?? response.data }
-      : { success: false, error: response.data.message || "Gagal mengecek status pembayaran Tripay" };
+      : { success: false, error: response.data.message || "Gagal mengecek status pembayaran" };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "tripay",
+      provider: "payment_provider",
       referenceId: providerReference,
       method: "GET",
       endpoint,
@@ -211,7 +211,7 @@ function parseNotificationBody(rawBody: string) {
   }
 }
 
-function normalizeTripayStatus(status: string) {
+function normalizePaymentProviderStatus(status: string) {
   const value = status.toUpperCase();
   if (value === "PAID") return "PAID";
   if (value === "UNPAID") return "PENDING";
