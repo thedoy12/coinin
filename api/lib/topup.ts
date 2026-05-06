@@ -8,6 +8,7 @@ const topupApi = axios.create({
   headers: {
     "Content-Type": "application/x-www-form-urlencoded",
   },
+  timeout: 20_000,
 });
 
 export async function placeTopupOrder(params: {
@@ -26,7 +27,7 @@ export async function placeTopupOrder(params: {
   });
 
   try {
-    const response = await topupApi.post(endpoint, payload);
+    const response = await topupApi.post(endpoint, payload.toString());
     await writeProviderApiLog({
       provider: "hatamarket",
       referenceId: params.referenceId,
@@ -75,7 +76,7 @@ export async function checkTopupStatus(referenceId: string) {
   const payload = buildPayload({ order_id: referenceId });
 
   try {
-    const response = await topupApi.post(endpoint, payload);
+    const response = await topupApi.post(endpoint, payload.toString());
     await writeProviderApiLog({
       provider: "hatamarket",
       referenceId,
@@ -124,7 +125,7 @@ export async function getTopupProfile() {
   const payload = buildPayload();
 
   try {
-    const response = await topupApi.post(endpoint, payload);
+    const response = await topupApi.post(endpoint, payload.toString());
     await writeProviderApiLog({
       provider: "hatamarket",
       method: "POST",
@@ -165,7 +166,7 @@ export async function getTopupServices() {
   const payload = buildPayload();
 
   try {
-    const response = await topupApi.post(endpoint, payload);
+    const response = await topupApi.post(endpoint, payload.toString());
     await writeProviderApiLog({
       provider: "hatamarket",
       method: "POST",
