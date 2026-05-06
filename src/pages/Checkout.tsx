@@ -268,10 +268,10 @@ export default function Checkout() {
                 className="angle-card w-full rounded-none bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black h-12 shadow-lg shadow-cyan-500/20"
               >
                 <QrCode className="w-4 h-4 mr-2" />
-                {createPayment.isPending ? "Memproses..." : "Bayar dengan QRIS / VA / E-Wallet"}
+                {createPayment.isPending ? "Memproses..." : "Bayar dengan Tripay"}
               </Button>
               <p className="text-xs text-center text-slate-500">
-                Pembayaran aman melalui Midtrans
+                Pembayaran aman melalui Tripay
               </p>
             </CardContent>
           </Card>

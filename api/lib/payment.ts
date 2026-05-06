@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { env } from "./env";
 import { writeProviderApiLog } from "./provider-api-log";
 
@@ -8,21 +8,33 @@ const paymentApi = axios.create({
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
-    Authorization: `Basic ${Buffer.from(`${env.paymentSecretKey}:`).toString("base64")}`,
+    Authorization: `Bearer ${env.paymentApiKey}`,
   },
-});
-
-const paymentStatusApi = axios.create({
-  baseURL: getMidtransStatusApiUrl(env.paymentApiUrl),
-  headers: {
-    Accept: "application/json",
-    Authorization: `Basic ${Buffer.from(`${env.paymentSecretKey}:`).toString("base64")}`,
-  },
+  validateStatus: (status) => status < 500,
 });
 
 export type PaymentNotification = {
   referenceId: string;
+  providerReference?: string;
   status: "PAID" | "PENDING" | "EXPIRED" | "FAILED";
+};
+
+type TripayResponse<T> = {
+  success: boolean;
+  message?: string;
+  data?: T;
+};
+
+type TripayTransaction = {
+  reference: string;
+  merchant_ref: string;
+  payment_method?: string;
+  payment_name?: string;
+  checkout_url?: string;
+  qr_url?: string | null;
+  pay_url?: string | null;
+  status?: string;
+  expired_time?: number;
 };
 
 export async function createQrisPayment(params: {
@@ -37,73 +49,68 @@ export async function createQrisPayment(params: {
     quantity: number;
   }>;
 }) {
-  const endpoint = "/snap/v1/transactions";
+  const endpoint = "/transaction/create";
   const startedAt = Date.now();
-  const [firstName, ...lastNameParts] = params.customerName.trim().split(/\s+/);
+  const amount = Math.round(params.amount);
+  const expiredTime = Math.floor(Date.now() / 1000) + 60 * 60;
   const payload = {
-    transaction_details: {
-      order_id: params.referenceId,
-      gross_amount: params.amount,
-    },
-    customer_details: {
-      first_name: firstName || params.customerName,
-      last_name: lastNameParts.join(" ") || undefined,
-      email: params.customerEmail,
-      phone: params.customerPhone,
-    },
-    item_details: params.items.map((item) => ({
-      id: item.name.slice(0, 50),
+    method: env.paymentMethod,
+    merchant_ref: params.referenceId,
+    amount,
+    customer_name: params.customerName,
+    customer_email: params.customerEmail,
+    customer_phone: params.customerPhone,
+    order_items: params.items.map((item) => ({
+      sku: item.name.slice(0, 32),
       name: item.name.slice(0, 50),
-      price: item.price,
+      price: Math.round(item.price),
       quantity: item.quantity,
     })),
-    enabled_payments: [
-      "gopay",
-      "shopeepay",
-      "bca_va",
-      "bni_va",
-      "bri_va",
-      "permata_va",
-      "echannel",
-      "other_va",
-    ],
-    callbacks: {
-      finish: `${env.appUrl}/status/${params.referenceId}`,
-    },
-    expiry: {
-      unit: "minutes",
-      duration: 60,
-    },
+    callback_url: `${env.appUrl}/api/callback`,
+    return_url: `${env.appUrl}/status/${params.referenceId}`,
+    expired_time: expiredTime,
+    signature: createTransactionSignature(params.referenceId, amount),
   };
 
   try {
-    const response = await paymentApi.post(endpoint, payload);
+    const response = await paymentApi.post<TripayResponse<TripayTransaction>>(endpoint, payload);
+    const success = response.status >= 200 && response.status < 300 && response.data.success && response.data.data;
     await writeProviderApiLog({
-      provider: "midtrans",
+      provider: "tripay",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
-      requestPayload: payload,
+      requestPayload: redactPaymentPayload(payload),
       responsePayload: response.data,
       statusCode: response.status,
-      success: true,
+      success: Boolean(success),
+      error: success ? undefined : response.data.message || "Tripay payment request failed",
       durationMs: Date.now() - startedAt,
     });
+
+    if (!success || !response.data.data) {
+      return {
+        success: false,
+        error: response.data.message || "Gagal membuat pembayaran Tripay",
+      };
+    }
+
     return {
       success: true,
       data: {
-        ...response.data,
-        reference: params.referenceId,
-        checkout_url: response.data.redirect_url,
+        ...response.data.data,
+        reference: response.data.data.reference,
+        merchant_ref: response.data.data.merchant_ref,
+        checkout_url: response.data.data.checkout_url || response.data.data.pay_url || response.data.data.qr_url,
       },
     };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "midtrans",
+      provider: "tripay",
       referenceId: params.referenceId,
       method: "POST",
       endpoint,
-      requestPayload: payload,
+      requestPayload: redactPaymentPayload(payload),
       responsePayload: getAxiosResponseData(error),
       statusCode: getAxiosStatus(error),
       success: false,
@@ -119,12 +126,7 @@ export async function createQrisPayment(params: {
 
 export function verifyPaymentCallback(rawBody: string, signature: string): boolean {
   if (!signature) return false;
-  const body = parseNotificationBody(rawBody);
-  if (!body?.order_id || !body.status_code || !body.gross_amount) return false;
-
-  const expectedSignature = createHash("sha512")
-    .update(`${body.order_id}${body.status_code}${body.gross_amount}${env.paymentSecretKey}`)
-    .digest("hex");
+  const expectedSignature = createCallbackSignature(rawBody);
   try {
     const actual = Buffer.from(signature, "hex");
     const expected = Buffer.from(expectedSignature, "hex");
@@ -136,40 +138,44 @@ export function verifyPaymentCallback(rawBody: string, signature: string): boole
 
 export function parsePaymentNotification(rawBody: string): PaymentNotification | null {
   const body = parseNotificationBody(rawBody);
-  if (!body?.order_id || !body.transaction_status) return null;
+  if (!body?.merchant_ref || !body.status) return null;
   return {
-    referenceId: body.order_id,
-    status: normalizeMidtransStatus(body.transaction_status, body.fraud_status),
+    referenceId: body.merchant_ref,
+    providerReference: body.reference,
+    status: normalizeTripayStatus(body.status),
   };
 }
 
-export async function checkPaymentStatus(referenceId: string) {
-  const endpoint = `/v2/${encodeURIComponent(referenceId)}/status`;
+export async function checkPaymentStatus(providerReference: string) {
+  const endpoint = "/transaction/check-status";
   const startedAt = Date.now();
   try {
-    const response = await paymentStatusApi.get(endpoint);
+    const response = await paymentApi.get<TripayResponse<TripayTransaction>>(endpoint, {
+      params: { reference: providerReference },
+    });
+    const success = response.status >= 200 && response.status < 300 && response.data.success;
     await writeProviderApiLog({
-      provider: "midtrans",
-      referenceId,
+      provider: "tripay",
+      referenceId: providerReference,
       method: "GET",
       endpoint,
-      requestPayload: { order_id: referenceId },
+      requestPayload: { reference: providerReference },
       responsePayload: response.data,
       statusCode: response.status,
-      success: true,
+      success,
+      error: success ? undefined : response.data.message || "Tripay status check failed",
       durationMs: Date.now() - startedAt,
     });
-    return {
-      success: true,
-      data: response.data,
-    };
+    return success
+      ? { success: true, data: response.data.data ?? response.data }
+      : { success: false, error: response.data.message || "Gagal mengecek status pembayaran Tripay" };
   } catch (error: unknown) {
     await writeProviderApiLog({
-      provider: "midtrans",
-      referenceId,
+      provider: "tripay",
+      referenceId: providerReference,
       method: "GET",
       endpoint,
-      requestPayload: { order_id: referenceId },
+      requestPayload: { reference: providerReference },
       responsePayload: getAxiosResponseData(error),
       statusCode: getAxiosStatus(error),
       success: false,
@@ -183,39 +189,41 @@ export async function checkPaymentStatus(referenceId: string) {
   }
 }
 
-function getMidtransStatusApiUrl(snapApiUrl: string) {
-  if (snapApiUrl.includes("app.sandbox.midtrans.com")) {
-    return "https://api.sandbox.midtrans.com";
-  }
-  if (snapApiUrl.includes("app.midtrans.com")) {
-    return "https://api.midtrans.com";
-  }
-  return snapApiUrl;
+function createTransactionSignature(referenceId: string, amount: number) {
+  return createHmac("sha256", env.paymentSecretKey)
+    .update(`${env.paymentMerchantId}${referenceId}${amount}`)
+    .digest("hex");
+}
+
+function createCallbackSignature(rawBody: string) {
+  return createHmac("sha256", env.paymentSecretKey).update(rawBody).digest("hex");
 }
 
 function parseNotificationBody(rawBody: string) {
   try {
     return JSON.parse(rawBody) as {
-      order_id?: string;
-      transaction_status?: string;
-      fraud_status?: string;
-      status_code?: string;
-      gross_amount?: string;
+      reference?: string;
+      merchant_ref?: string;
+      status?: string;
     };
   } catch {
     return null;
   }
 }
 
-function normalizeMidtransStatus(transactionStatus: string, fraudStatus?: string) {
-  const status = transactionStatus.toLowerCase();
-  const fraud = fraudStatus?.toLowerCase();
-  if (status === "settlement" || (status === "capture" && fraud === "accept")) {
-    return "PAID";
-  }
-  if (status === "pending") return "PENDING";
-  if (status === "expire") return "EXPIRED";
+function normalizeTripayStatus(status: string) {
+  const value = status.toUpperCase();
+  if (value === "PAID") return "PAID";
+  if (value === "UNPAID") return "PENDING";
+  if (value === "EXPIRED") return "EXPIRED";
   return "FAILED";
+}
+
+function redactPaymentPayload<T extends Record<string, unknown>>(payload: T) {
+  return {
+    ...payload,
+    signature: payload.signature ? "[REDACTED]" : payload.signature,
+  };
 }
 
 function getAxiosStatus(error: unknown) {
@@ -228,8 +236,8 @@ function getAxiosResponseData(error: unknown) {
 
 function getErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { error_messages?: string[]; message?: string } | undefined;
-    return data?.error_messages?.join(", ") || data?.message || error.message;
+    const data = error.response?.data as { message?: string; error?: string } | undefined;
+    return data?.message || data?.error || error.message;
   }
   return error instanceof Error ? error.message : "Unknown error";
 }

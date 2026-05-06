@@ -8,7 +8,7 @@ Platform top-up game fullstack dengan integrasi payment gateway dan API top-up o
 - **Backend**: Hono + tRPC 11.x (end-to-end type safety)
 - **Database**: Drizzle ORM + PostgreSQL
 - **Auth**: Username/email + password, session JWT, role admin
-- **Payment**: Midtrans Snap
+- **Payment**: Tripay
 - **Top-up API**: HataMarket
 
 ## Cara Menjalankan Project
@@ -29,11 +29,12 @@ TOPUP_API_URL=https://hatamarket.com/api
 HATAMARKET_API_ID=YOUR_API_ID
 HATAMARKET_API_KEY=YOUR_API_KEY
 
-# Payment Gateway (Midtrans Snap)
-PAYMENT_MERCHANT_ID=YOUR_MERCHANT_ID
-PAYMENT_SECRET_KEY=YOUR_SERVER_KEY
-MIDTRANS_CLIENT_KEY=YOUR_CLIENT_KEY
-PAYMENT_API_URL=https://app.sandbox.midtrans.com
+# Payment Gateway (Tripay)
+TRIPAY_MERCHANT_CODE=YOUR_MERCHANT_CODE
+TRIPAY_API_KEY=YOUR_API_KEY
+TRIPAY_PRIVATE_KEY=YOUR_PRIVATE_KEY
+TRIPAY_PAYMENT_METHOD=QRIS2
+PAYMENT_API_URL=https://tripay.co.id/api
 ```
 
 ### 3. Setup Database

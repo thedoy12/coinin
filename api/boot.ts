@@ -63,12 +63,15 @@ app.get("/api/callback", (c) =>
 app.post("/api/callback", async (c) => {
   try {
     const rawBody = await c.req.text();
-    const body = JSON.parse(rawBody) as { signature_key?: string };
-    const signature = body.signature_key || "";
+    const signature = c.req.header("x-callback-signature") || "";
+    const event = c.req.header("x-callback-event") || "";
 
     // Verify callback signature
     if (!verifyPaymentCallback(rawBody, signature)) {
       return c.json({ error: "Invalid signature" }, 400);
+    }
+    if (event !== "payment_status") {
+      return c.json({ error: "Invalid callback event" }, 400);
     }
 
     const notification = parsePaymentNotification(rawBody);

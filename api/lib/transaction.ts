@@ -133,7 +133,13 @@ export async function fulfillPaidTransaction(
 }
 
 export async function syncPaymentAndFulfill(referenceId: string) {
-  const payment = await checkPaymentStatus(referenceId);
+  const txResult = await getDb()
+    .select({ paymentReference: transactions.paymentReference })
+    .from(transactions)
+    .where(eq(transactions.referenceId, referenceId))
+    .limit(1);
+  const providerReference = txResult[0]?.paymentReference || referenceId;
+  const payment = await checkPaymentStatus(providerReference);
   if (!payment.success) return payment;
 
   const status = extractPaymentStatus(payment.data);

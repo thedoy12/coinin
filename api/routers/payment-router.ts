@@ -91,7 +91,7 @@ export const paymentRouter = createRouter({
             customerName: input.customerName,
             customerEmail: input.customerEmail.toLowerCase(),
             customerPhone: normalizePhone(input.customerPhone),
-            paymentMethod: "Midtrans",
+            paymentMethod: "Tripay",
             paymentReference: paymentResult.data.reference,
             paymentStatus: "pending",
             expiresAt: new Date(Date.now() + 60 * 60 * 1000),
