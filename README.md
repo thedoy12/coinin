@@ -110,14 +110,14 @@ npm start
 
 ```text
 Game:
-<= Rp20.000      : 4.5%, minimal Rp700
-<= Rp100.000     : 4%, minimal Rp1.000
-<= Rp300.000     : 3.5%
-> Rp300.000      : 3%, maksimal Rp50.000
+<= Rp20.000      : 4%, minimal Rp600
+<= Rp100.000     : 3.5%, minimal Rp900
+<= Rp300.000     : 3%
+> Rp300.000      : 2.5%, maksimal Rp40.000
 ```
 
 Harga dibulatkan ke atas ke kelipatan Rp100. Produk digital memakai markup lebih ketat:
-3% minimal Rp500, 2.5% sampai Rp100.000, lalu 2% maksimal Rp10.000.
+2.5% minimal Rp400, 2.25% sampai Rp100.000, lalu 1.75% maksimal Rp8.000.
 
 ## Struktur Project
 

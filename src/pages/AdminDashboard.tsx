@@ -524,17 +524,37 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="gap-6">
-        <TabsList className="bg-slate-900 border border-slate-800 text-slate-400 overflow-x-auto h-auto justify-start p-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="transactions">Transaksi</TabsTrigger>
-          <TabsTrigger value="customers">Pembeli</TabsTrigger>
-          <TabsTrigger value="accounts">Akun</TabsTrigger>
-          <TabsTrigger value="games">Game</TabsTrigger>
-          <TabsTrigger value="products">Produk</TabsTrigger>
-          <TabsTrigger value="popup">Popup</TabsTrigger>
-          <TabsTrigger value="api-logs">API Log</TabsTrigger>
-          <TabsTrigger value="audit">Audit</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+        <TabsList className="bg-slate-900 border border-slate-800 overflow-x-auto h-auto justify-start p-1">
+          <TabsTrigger value="overview" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="transactions" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Transaksi
+          </TabsTrigger>
+          <TabsTrigger value="customers" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Pembeli
+          </TabsTrigger>
+          <TabsTrigger value="accounts" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Akun
+          </TabsTrigger>
+          <TabsTrigger value="games" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Game
+          </TabsTrigger>
+          <TabsTrigger value="products" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Produk
+          </TabsTrigger>
+          <TabsTrigger value="popup" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Popup
+          </TabsTrigger>
+          <TabsTrigger value="api-logs" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            API Log
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Audit
+          </TabsTrigger>
+          <TabsTrigger value="maintenance" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+            Maintenance
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
