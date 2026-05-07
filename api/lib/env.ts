@@ -36,9 +36,9 @@ function isTruthyEnv(name: string) {
 function getDigiflazzApiKey() {
   const testing = isTruthyEnv("TOPUP_TESTING") || isTruthyEnv("DIGIFLAZZ_TESTING");
   if (testing) {
-    return firstDefined("DIGIFLAZZ_DEVELOPMENT_KEY", "TOPUP_API_SECRET", "DIGIFLAZZ_API_KEY");
+    return firstDefined("TOPUP_API_SECRET", "DIGIFLAZZ_DEVELOPMENT_KEY", "DIGIFLAZZ_API_KEY");
   }
-  return firstDefined("DIGIFLAZZ_PRODUCTION_KEY", "TOPUP_API_SECRET", "DIGIFLAZZ_API_KEY");
+  return firstDefined("TOPUP_API_SECRET", "DIGIFLAZZ_PRODUCTION_KEY", "DIGIFLAZZ_API_KEY");
 }
 
 export const env = {
