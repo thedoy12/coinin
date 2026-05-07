@@ -19,6 +19,7 @@ import {
   syncPaymentAndFulfill,
 } from "../lib/transaction";
 import { syncCatalogFromProvider } from "../lib/catalog-sync";
+import { defaultPopupSettings, getPopupSettingsOrDefault, isMissingPopupSettingsTable } from "../lib/popup-settings";
 
 const transactionStatus = z.enum(["pending", "processing", "success", "failed"]);
 const productType = z.enum(["general", "membership"]);
@@ -228,24 +229,7 @@ export const adminRouter = createRouter({
   }),
 
   popupSettings: adminQuery.query(async () => {
-    const db = getDb();
-    const rows = await db
-      .select()
-      .from(popupSettings)
-      .where(eq(popupSettings.id, 1))
-      .limit(1);
-
-    return rows[0] ?? {
-      id: 1,
-      isActive: 0,
-      title: "Promo CoinIn",
-      description: "Top up game favorit kamu lebih cepat dengan pembayaran praktis.",
-      imageUrl: null,
-      buttonText: "Top Up Sekarang",
-      buttonUrl: "#game-store",
-      displayDelayMs: 1200,
-      updatedAt: new Date(),
-    };
+    return getPopupSettingsOrDefault();
   }),
 
   allTransactions: adminQuery.query(async () => {
@@ -380,11 +364,7 @@ export const adminRouter = createRouter({
     .input(popupSettingsInput)
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
-      const existing = await db
-        .select()
-        .from(popupSettings)
-        .where(eq(popupSettings.id, 1))
-        .limit(1);
+      const existing = await getPopupSettingsOrDefault();
       const values = {
         id: 1,
         isActive: input.isActive ? 1 : 0,
@@ -397,20 +377,30 @@ export const adminRouter = createRouter({
         updatedAt: new Date(),
       };
 
-      await db
-        .insert(popupSettings)
-        .values(values)
-        .onConflictDoUpdate({
-          target: popupSettings.id,
-          set: values,
-        });
+      try {
+        await db
+          .insert(popupSettings)
+          .values(values)
+          .onConflictDoUpdate({
+            target: popupSettings.id,
+            set: values,
+          });
+      } catch (error) {
+        if (isMissingPopupSettingsTable(error)) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Tabel popup_settings belum ada di database. Jalankan migration terbaru terlebih dahulu.",
+          });
+        }
+        throw error;
+      }
 
       await writeAuditLog({
         actorUserId: ctx.user.id,
         action: "popup.update",
         entityType: "popup_settings",
         entityId: "1",
-        before: existing[0],
+        before: existing.id === defaultPopupSettings.id ? undefined : existing,
         after: values,
       });
 

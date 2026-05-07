@@ -16,6 +16,14 @@ function requiredSecret(name: string, minLength = 32): string {
   return value;
 }
 
+function firstDefined(...names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value) return value;
+  }
+  return "";
+}
+
 export const env = {
   appId: required("APP_ID"),
   appSecret: requiredSecret("APP_SECRET"),
@@ -24,25 +32,19 @@ export const env = {
   ownerUnionId: process.env.OWNER_UNION_ID ?? "",
   appUrl: process.env.VITE_APP_URL ?? "http://localhost:3000",
   // Top-up API config
-  topupApiUrl:
-    process.env.TOPUP_API_URL ?? "",
-  topupApiUsername:
-    process.env.TOPUP_API_USERNAME ?? "",
-  topupApiSecret:
-    process.env.TOPUP_API_SECRET ?? "",
-  topupWebhookSecret: process.env.TOPUP_WEBHOOK_SECRET ?? "",
-  topupWebhookUrl: process.env.TOPUP_WEBHOOK_URL ?? "",
-  topupUseTestingMode: process.env.TOPUP_TESTING === "true",
+  topupApiUrl: firstDefined("TOPUP_API_URL"),
+  topupApiUsername: firstDefined("TOPUP_API_USERNAME", "DIGIFLAZZ_USERNAME"),
+  topupApiSecret: firstDefined("TOPUP_API_SECRET", "DIGIFLAZZ_API_KEY"),
+  topupWebhookSecret: firstDefined("TOPUP_WEBHOOK_SECRET", "DIGIFLAZZ_WEBHOOK_SECRET"),
+  topupWebhookUrl: firstDefined("TOPUP_WEBHOOK_URL", "DIGIFLAZZ_WEBHOOK_URL"),
+  topupUseTestingMode: firstDefined("TOPUP_TESTING", "DIGIFLAZZ_TESTING") === "true",
   topupZoneSeparator: process.env.TOPUP_ZONE_SEPARATOR ?? "",
   topupUseBuyerPriceLimit: process.env.TOPUP_MAX_PRICE !== "false",
   topupPriceCeiling: Number(process.env.TOPUP_PRICE_CEILING ?? 0) || undefined,
   // Payment config
-  paymentMerchantId:
-    process.env.PAYMENT_MERCHANT_ID ?? "",
-  paymentApiKey:
-    process.env.PAYMENT_API_KEY ?? "",
-  paymentSecretKey:
-    process.env.PAYMENT_SECRET_KEY ?? "",
-  paymentMethod: process.env.PAYMENT_METHOD ?? "QRIS",
-  paymentApiUrl: process.env.PAYMENT_API_URL ?? "",
+  paymentMerchantId: firstDefined("PAYMENT_MERCHANT_ID", "TRIPAY_MERCHANT_CODE"),
+  paymentApiKey: firstDefined("PAYMENT_API_KEY", "TRIPAY_API_KEY"),
+  paymentSecretKey: firstDefined("PAYMENT_SECRET_KEY", "TRIPAY_PRIVATE_KEY"),
+  paymentMethod: firstDefined("PAYMENT_METHOD", "TRIPAY_PAYMENT_METHOD") || "QRIS",
+  paymentApiUrl: firstDefined("PAYMENT_API_URL"),
 };

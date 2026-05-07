@@ -42,7 +42,7 @@ export async function placeTopupOrder(params: {
   if (!isTopupConfigured()) {
     return {
       success: false,
-      error: "Sistem top-up belum dikonfigurasi.",
+      error: getTopupConfigurationError(),
     };
   }
 
@@ -109,7 +109,7 @@ export async function getTopupProfile() {
   if (!isTopupConfigured()) {
     return {
       success: false,
-      error: "Sistem top-up belum dikonfigurasi.",
+      error: getTopupConfigurationError(),
     };
   }
 
@@ -163,7 +163,7 @@ export async function getTopupServices() {
   if (!isTopupConfigured()) {
     return {
       success: false,
-      error: "Sistem top-up belum dikonfigurasi.",
+      error: getTopupConfigurationError(),
     };
   }
 
@@ -317,4 +317,17 @@ function getProviderMessage(data: unknown) {
 
 function isTopupConfigured() {
   return Boolean(env.topupApiUrl && env.topupApiUsername && env.topupApiSecret);
+}
+
+function getTopupConfigurationError() {
+  const missing: string[] = [];
+  if (!env.topupApiUrl) missing.push("TOPUP_API_URL");
+  if (!env.topupApiUsername) missing.push("TOPUP_API_USERNAME");
+  if (!env.topupApiSecret) missing.push("TOPUP_API_SECRET");
+
+  if (!missing.length) {
+    return "Sistem top-up belum dikonfigurasi.";
+  }
+
+  return `Sistem top-up belum dikonfigurasi. Env yang masih kosong: ${missing.join(", ")}`;
 }
