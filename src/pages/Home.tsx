@@ -14,14 +14,18 @@ import { GameCard } from "@/components/GameCard";
 import { useSEO } from "@/hooks/useSEO";
 import {
   BadgeCheck,
+  Cpu,
   ChevronRight,
   Clock,
   Gamepad2,
   Headphones,
+  Orbit,
+  Radar,
   Search,
   Shield,
   Sparkles,
   Swords,
+  Trophy,
   Zap,
 } from "lucide-react";
 
@@ -68,6 +72,28 @@ export default function Home() {
   ).slice(0, 6);
   const featuredGames = filteredGames?.slice(0, 3) ?? [];
   const operatorGames = games?.slice(0, 4) ?? [];
+  const liveFeed = [
+    "Live feed // QRIS aktif 24 jam",
+    "Status real-time untuk setiap order",
+    "Top up game, pulsa, token PLN dalam satu lane",
+    "Checkout singkat, konfirmasi cepat, progress jelas",
+  ];
+  const commandStats = [
+    { value: "3 lane", label: "checkout flow" },
+    { value: "< 1 min", label: "status update" },
+    { value: "24 jam", label: "ops online" },
+  ];
+  const arenaSignals = [
+    { icon: Radar, title: "Signal Locked", text: "Order bergerak dari bayar sampai finish tanpa perlu pindah layar." },
+    { icon: Trophy, title: "Featured Arena", text: "Hero cards, live motion, dan katalog populer dibuat lebih menonjol." },
+    { icon: Cpu, title: "Fast Pipeline", text: "Route cepat untuk game favorit, pulsa, dan token PLN harian." },
+  ];
+  const gameSpotlights =
+    (games ?? []).slice(0, 8).map((game) => game.name).filter(Boolean) ||
+    [];
+  const marqueeGames = gameSpotlights.length
+    ? gameSpotlights
+    : ["Mobile Legends", "Free Fire", "HOK", "Valorant", "Pulsa", "Token PLN"];
 
   return (
     <div className="pb-20">
@@ -115,8 +141,24 @@ export default function Home() {
         </Dialog>
       )}
 
+      <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="hud-frame overflow-hidden border border-cyan-300/15 bg-slate-950/75 px-4 py-3">
+          <div className="marquee-track">
+            {[...liveFeed, ...liveFeed].map((item, index) => (
+              <div key={`${item}-${index}`} className="marquee-item">
+                <span className="h-2 w-2 bg-cyan-300" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
         <div className="hud-frame cinematic-stage min-h-[620px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
+          <div className="hero-energy-ring" />
+          <div className="hero-energy-beam" />
+          <div className="hero-wave-plane hidden lg:block" />
           <div className="relative z-10 flex min-h-[560px] flex-col">
             <div className="flex items-center justify-between text-xs font-black uppercase tracking-[0.28em] text-cyan-100/80">
               <span>CoinIn Arcade</span>
@@ -140,7 +182,7 @@ export default function Home() {
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a href="#game-store">
-                    <Button className="h-12 rounded-none bg-cyan-300 px-7 font-black uppercase text-slate-950 hover:bg-cyan-200">
+                    <Button className="hero-cta h-12 rounded-none bg-cyan-300 px-7 font-black uppercase text-slate-950 hover:bg-cyan-200">
                       Top Up Now
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -164,6 +206,15 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  {commandStats.map((item) => (
+                    <div key={item.label} className="signal-chip">
+                      <span className="signal-chip-value">{item.value}</span>
+                      <span className="signal-chip-label">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="relative hidden min-h-[390px] lg:block">
@@ -171,15 +222,20 @@ export default function Home() {
                   <Link
                     key={game.id}
                     to={`/game/${game.slug}`}
-                    className={`angle-card poster-glow absolute w-48 overflow-hidden border border-cyan-300/30 bg-slate-950 transition-transform hover:-translate-y-2 ${
+                    className={`angle-card poster-glow poster-stack-card absolute w-48 overflow-hidden border border-cyan-300/30 bg-slate-950 transition-transform hover:-translate-y-2 ${
                       index === 0
-                        ? "left-8 top-10 rotate-[-7deg]"
+                        ? "left-8 top-10"
                         : index === 1
-                        ? "right-4 top-0 rotate-[5deg]"
+                        ? "right-4 top-0"
                         : index === 2
-                        ? "left-0 bottom-8 rotate-[4deg]"
-                        : "right-8 bottom-2 rotate-[-5deg]"
+                        ? "left-0 bottom-8"
+                        : "right-8 bottom-2"
                     }`}
+                    style={{
+                      animationDelay: `${index * 0.45}s`,
+                      ["--poster-rotate" as string]:
+                        index === 0 ? "-7deg" : index === 1 ? "5deg" : index === 2 ? "4deg" : "-5deg",
+                    }}
                   >
                     <div className="relative h-60">
                       {game.thumbnail ? (
@@ -197,6 +253,16 @@ export default function Home() {
                     </div>
                   </Link>
                 ))}
+                <div className="absolute bottom-0 left-12 rounded-none border border-cyan-300/20 bg-slate-950/80 px-5 py-4 backdrop-blur">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200">
+                    <Orbit className="h-4 w-4" />
+                    Active Signal
+                  </div>
+                  <p className="mt-2 text-2xl font-black uppercase italic text-white">Fast Lane</p>
+                  <p className="mt-2 max-w-[12rem] text-xs leading-6 text-slate-400">
+                    Poster stack bergerak pelan untuk kasih rasa arcade yang lebih hidup.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -251,6 +317,30 @@ export default function Home() {
               </article>
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="hud-frame overflow-hidden border border-cyan-300/15 bg-slate-950/75 px-4 py-5">
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-200">Arena Pulse</p>
+              <h2 className="section-title-gaming mt-2 text-2xl font-black uppercase italic text-white sm:text-3xl">
+                Motion Layer For The Storefront
+              </h2>
+            </div>
+            <div className="hidden text-right text-xs font-black uppercase tracking-[0.2em] text-slate-500 sm:block">
+              idle glow // hover lift // moving ticker
+            </div>
+          </div>
+          <div className="spotlight-marquee">
+            {[...marqueeGames, ...marqueeGames].map((name, index) => (
+              <div key={`${name}-${index}`} className="spotlight-pill">
+                <span className="text-cyan-200">//</span>
+                <span>{name}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -337,7 +427,14 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+          {arenaSignals.map((item) => (
+            <article key={item.title} className="angle-card mission-panel border border-cyan-300/20 bg-slate-950/70 p-5 md:col-span-1 lg:col-span-2">
+              <item.icon className="mb-4 h-7 w-7 text-cyan-200" />
+              <h2 className="text-lg font-black uppercase text-white">{item.title}</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p>
+            </article>
+          ))}
           {[
             {
               icon: BadgeCheck,
@@ -355,7 +452,7 @@ export default function Home() {
               text: "Data pembeli dan order bisa ditelusuri kalau butuh bantuan.",
             },
           ].map((item) => (
-            <article key={item.title} className="angle-card border border-cyan-300/20 bg-slate-950/70 p-5">
+            <article key={item.title} className="angle-card mission-panel border border-cyan-300/20 bg-slate-950/70 p-5 md:col-span-1 lg:col-span-2">
               <item.icon className="mb-4 h-7 w-7 text-cyan-200" />
               <h2 className="text-lg font-black uppercase text-white">{item.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p>

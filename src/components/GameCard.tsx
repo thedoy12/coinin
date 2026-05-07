@@ -15,7 +15,7 @@ type GameCardProps = {
 export function GameCard({ game }: GameCardProps) {
   return (
     <Link to={`/game/${game.slug}`} className="group">
-      <Card className="angle-card poster-glow overflow-hidden border-cyan-300/20 bg-slate-950 transition-transform group-hover:-translate-y-2">
+      <Card className="angle-card poster-glow mission-panel overflow-hidden border-cyan-300/20 bg-slate-950 transition-transform group-hover:-translate-y-2">
         <CardContent className="p-0">
           <div className="relative h-52">
             {game.thumbnail ? (
@@ -33,7 +33,7 @@ export function GameCard({ game }: GameCardProps) {
             <div className="absolute left-4 top-4 border border-cyan-300/30 bg-slate-950/80 px-3 py-1 text-[10px] font-black uppercase text-cyan-100">
               {game.category}
             </div>
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
               <div className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-200 bg-cyan-200/20 backdrop-blur">
                 <Swords className="h-5 w-5 text-cyan-100" />
               </div>
