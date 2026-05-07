@@ -466,3 +466,28 @@
     transform: translateX(-50%);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-grid,
+  .scanline,
+  .coin-float,
+  .coin-float-delayed,
+  .pulse-pop,
+  .hero-energy-ring,
+  .hero-energy-beam,
+  .hero-wave-plane,
+  .hero-cta::after,
+  .poster-stack-card,
+  .marquee-track,
+  .spotlight-marquee {
+    animation: none !important;
+  }
+
+  .hover-lift,
+  .mission-panel,
+  .poster-stack-card,
+  .group img,
+  .group-hover\:-translate-y-2 {
+    transition: none !important;
+  }
+}

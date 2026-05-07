@@ -2,7 +2,7 @@ import { Link, Outlet } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Gamepad2, ImageUp, User, LogOut, Shield, Search, Radio } from "lucide-react";
-import { legalLinks } from "@/pages/InfoPages";
+import { legalLinks } from "@/const/legal-links";
 
 export default function Layout() {
   const { user, isAuthenticated, logout } = useAuth();

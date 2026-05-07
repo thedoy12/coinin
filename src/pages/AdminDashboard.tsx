@@ -105,7 +105,7 @@ export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [gameForm, setGameForm] = useState(emptyGameForm);
   const [productForm, setProductForm] = useState(emptyProductForm);
-  const [popupForm, setPopupForm] = useState(emptyPopupForm);
+  const [popupDraft, setPopupDraft] = useState<typeof emptyPopupForm | null>(null);
   const [productImportFile, setProductImportFile] = useState<File | null>(null);
   const [productImportCount, setProductImportCount] = useState<number | null>(null);
   const [transactionSearch, setTransactionSearch] = useState("");
@@ -134,21 +134,25 @@ export default function AdminDashboard() {
   const gamesQuery = trpc.admin.games.useQuery(undefined, { enabled });
   const auditQuery = trpc.admin.auditLogs.useQuery(undefined, { enabled });
   const providerApiLogsQuery = trpc.admin.providerApiLogs.useQuery(undefined, { enabled });
-  const popupSettingsQuery = trpc.admin.popupSettings.useQuery(undefined, { enabled });
+  const popupSettingsQuery = trpc.admin.popupSettings.useQuery(undefined, {
+    enabled,
+    refetchOnWindowFocus: false,
+  });
 
-  useEffect(() => {
-    const popup = popupSettingsQuery.data;
-    if (!popup) return;
-    setPopupForm({
-      isActive: popup.isActive === 1,
-      title: popup.title,
-      description: popup.description,
-      imageUrl: popup.imageUrl ?? "",
-      buttonText: popup.buttonText,
-      buttonUrl: popup.buttonUrl,
-      displayDelayMs: popup.displayDelayMs.toString(),
-    });
-  }, [popupSettingsQuery.data]);
+  const popupSettings = popupSettingsQuery.data;
+  const popupForm =
+    popupDraft ??
+    (popupSettings
+    ? {
+      isActive: popupSettings.isActive === 1,
+      title: popupSettings.title,
+      description: popupSettings.description,
+      imageUrl: popupSettings.imageUrl ?? "",
+      buttonText: popupSettings.buttonText,
+      buttonUrl: popupSettings.buttonUrl,
+      displayDelayMs: popupSettings.displayDelayMs.toString(),
+    }
+    : emptyPopupForm);
 
   const refreshAll = () => {
     statsQuery.refetch();
@@ -274,6 +278,7 @@ export default function AdminDashboard() {
 
   const updatePopupSettings = trpc.admin.updatePopupSettings.useMutation({
     onSuccess: () => {
+      setPopupDraft(null);
       toast.success("Setting popup disimpan");
       refreshAll();
     },
@@ -824,7 +829,7 @@ export default function AdminDashboard() {
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant={popupForm.isActive ? "default" : "outline"}
-                  onClick={() => setPopupForm({ ...popupForm, isActive: !popupForm.isActive })}
+                  onClick={() => setPopupDraft({ ...popupForm, isActive: !popupForm.isActive })}
                 >
                   {popupForm.isActive ? "Popup Aktif" : "Popup Nonaktif"}
                 </Button>
@@ -834,7 +839,7 @@ export default function AdminDashboard() {
                 <Field label="Judul">
                   <Input
                     value={popupForm.title}
-                    onChange={(event) => setPopupForm({ ...popupForm, title: event.target.value })}
+                    onChange={(event) => setPopupDraft({ ...popupForm, title: event.target.value })}
                     className="bg-slate-950 border-slate-700 text-white"
                   />
                 </Field>
@@ -844,7 +849,7 @@ export default function AdminDashboard() {
                     min={0}
                     max={10000}
                     value={popupForm.displayDelayMs}
-                    onChange={(event) => setPopupForm({ ...popupForm, displayDelayMs: event.target.value })}
+                    onChange={(event) => setPopupDraft({ ...popupForm, displayDelayMs: event.target.value })}
                     className="bg-slate-950 border-slate-700 text-white"
                   />
                 </Field>
@@ -852,7 +857,7 @@ export default function AdminDashboard() {
                   <Field label="Deskripsi">
                     <Textarea
                       value={popupForm.description}
-                      onChange={(event) => setPopupForm({ ...popupForm, description: event.target.value })}
+                      onChange={(event) => setPopupDraft({ ...popupForm, description: event.target.value })}
                       className="bg-slate-950 border-slate-700 text-white"
                     />
                   </Field>
@@ -861,7 +866,7 @@ export default function AdminDashboard() {
                   <Field label="URL Gambar">
                     <Input
                       value={popupForm.imageUrl}
-                      onChange={(event) => setPopupForm({ ...popupForm, imageUrl: event.target.value })}
+                      onChange={(event) => setPopupDraft({ ...popupForm, imageUrl: event.target.value })}
                       placeholder="/promo.jpg atau https://..."
                       className="bg-slate-950 border-slate-700 text-white"
                     />
@@ -870,14 +875,14 @@ export default function AdminDashboard() {
                 <Field label="Teks Tombol">
                   <Input
                     value={popupForm.buttonText}
-                    onChange={(event) => setPopupForm({ ...popupForm, buttonText: event.target.value })}
+                    onChange={(event) => setPopupDraft({ ...popupForm, buttonText: event.target.value })}
                     className="bg-slate-950 border-slate-700 text-white"
                   />
                 </Field>
                 <Field label="URL Tombol">
                   <Input
                     value={popupForm.buttonUrl}
-                    onChange={(event) => setPopupForm({ ...popupForm, buttonUrl: event.target.value })}
+                    onChange={(event) => setPopupDraft({ ...popupForm, buttonUrl: event.target.value })}
                     placeholder="#game-store atau /games"
                     className="bg-slate-950 border-slate-700 text-white"
                   />
@@ -1065,6 +1070,11 @@ type TransactionRow = {
   createdAt: Date;
 };
 
+type OperationStatus = {
+  label: string;
+  tone: StatusTone;
+};
+
 function TransactionTable({
   rows,
   onSync,
@@ -1091,6 +1101,7 @@ function TransactionTable({
             <TableHead className="text-slate-400">Total</TableHead>
             {showCustomer && <TableHead className="text-slate-400">Profit</TableHead>}
             <TableHead className="text-slate-400">Status</TableHead>
+            <TableHead className="text-slate-400">Alur</TableHead>
             <TableHead className="text-slate-400">Payment</TableHead>
             <TableHead className="text-slate-400">Top-up</TableHead>
             <TableHead className="text-slate-400">Aksi</TableHead>
@@ -1112,6 +1123,7 @@ function TransactionTable({
               <TableCell className="text-amber-400 text-sm">{rupiah(tx.price)}</TableCell>
               {showCustomer && <TableCell className="text-green-400 text-sm">{rupiah(tx.profit ?? 0)}</TableCell>}
               <TableCell><StatusBadge status={tx.status} /></TableCell>
+              <TableCell><OperationBadge status={resolveOperationStatus(tx)} /></TableCell>
               <TableCell><StatusBadge status={tx.paymentStatus} /></TableCell>
               <TableCell><StatusBadge status={tx.topupStatus || "-"} /></TableCell>
               <TableCell>
@@ -1126,7 +1138,7 @@ function TransactionTable({
           ))}
           {!rows.length && (
             <TableRow>
-              <TableCell colSpan={showCustomer ? 11 : 9} className="text-center text-slate-500 py-8">Belum ada transaksi</TableCell>
+              <TableCell colSpan={showCustomer ? 12 : 10} className="text-center text-slate-500 py-8">Belum ada transaksi</TableCell>
             </TableRow>
           )}
         </TableBody>
@@ -1461,8 +1473,60 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={`${toneClasses(statusToTone(status), "badge")} text-xs capitalize`}>{status}</Badge>;
 }
 
+function OperationBadge({ status }: { status: OperationStatus }) {
+  return <Badge className={`${toneClasses(status.tone, "badge")} text-xs`}>{status.label}</Badge>;
+}
+
 function normalizeProductType(value: string): ProductType {
   return value === "membership" ? "membership" : "general";
+}
+
+function resolveOperationStatus(tx: TransactionRow): OperationStatus {
+  if (tx.status === "success" || tx.topupStatus === "success") {
+    return { label: "Sukses", tone: "success" };
+  }
+
+  if (tx.paymentStatus === "failed") {
+    return { label: "Gagal Payment", tone: "failed" };
+  }
+
+  if (tx.paymentStatus === "expired") {
+    return { label: "Payment Expired", tone: "failed" };
+  }
+
+  if (tx.paymentStatus === "unpaid") {
+    return { label: "Belum Bayar", tone: "pending" };
+  }
+
+  if (tx.paymentStatus === "pending") {
+    return { label: "Menunggu Payment", tone: "processing" };
+  }
+
+  if (tx.paymentStatus === "paid" && tx.topupStatus === "processing") {
+    return { label: "Diproses Provider", tone: "processing" };
+  }
+
+  if (tx.paymentStatus === "paid" && tx.status === "failed") {
+    return { label: "Gagal Top-up", tone: "failed" };
+  }
+
+  if (tx.paymentStatus === "paid" && (!tx.topupStatus || tx.topupStatus === "pending")) {
+    return { label: "Siap Kirim", tone: "pending" };
+  }
+
+  if (tx.paymentStatus === "paid") {
+    return { label: "Payment Masuk", tone: "success" };
+  }
+
+  if (tx.status === "processing") {
+    return { label: "Order Diproses", tone: "processing" };
+  }
+
+  if (tx.status === "failed") {
+    return { label: "Order Gagal", tone: "failed" };
+  }
+
+  return { label: "Menunggu", tone: "pending" };
 }
 
 function statusToTone(status: string): StatusTone {

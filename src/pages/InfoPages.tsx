@@ -1,5 +1,6 @@
 import { Mail, MessageCircle, ShieldCheck, Store, FileText, Headphones } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
+import { legalLinks } from "@/const/legal-links";
 
 const supportEmail = "putradadoy@gmail.com";
 const supportWhatsapp = "+62 895-3930-6153-6";
@@ -229,9 +230,4 @@ function ContactCard({
   );
 }
 
-export const legalLinks = [
-  { to: "/tentang-kami", label: "Tentang Kami" },
-  { to: "/kontak", label: "Kontak Support" },
-  { to: "/kebijakan-privasi", label: "Kebijakan Privasi" },
-  { to: "/ketentuan-layanan", label: "Ketentuan Layanan" },
-];
+export { legalLinks };

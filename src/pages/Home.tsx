@@ -19,7 +19,6 @@ import {
   Clock,
   Gamepad2,
   Headphones,
-  Orbit,
   Radar,
   Search,
   Shield,
@@ -253,16 +252,6 @@ export default function Home() {
                     </div>
                   </Link>
                 ))}
-                <div className="absolute bottom-0 left-12 rounded-none border border-cyan-300/20 bg-slate-950/80 px-5 py-4 backdrop-blur">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200">
-                    <Orbit className="h-4 w-4" />
-                    Active Signal
-                  </div>
-                  <p className="mt-2 text-2xl font-black uppercase italic text-white">Fast Lane</p>
-                  <p className="mt-2 max-w-[12rem] text-xs leading-6 text-slate-400">
-                    Poster stack bergerak pelan untuk kasih rasa arcade yang lebih hidup.
-                  </p>
-                </div>
               </div>
             </div>
           </div>
