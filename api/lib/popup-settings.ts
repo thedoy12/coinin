@@ -33,9 +33,12 @@ export async function getPopupSettingsOrDefault() {
 
 export function isMissingPopupSettingsTable(error: unknown) {
   if (!(error instanceof Error)) return false;
-  return /popup_settings/i.test(error.message) && (
-    /does not exist/i.test(error.message) ||
-    /relation/i.test(error.message) ||
-    /no such table/i.test(error.message)
+  const message = error.message;
+  if (!/popup_settings/i.test(message)) return false;
+  return (
+    /does not exist/i.test(message) ||
+    /relation/i.test(message) ||
+    /no such table/i.test(message) ||
+    /failed query:/i.test(message)
   );
 }
