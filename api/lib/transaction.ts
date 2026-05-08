@@ -146,7 +146,10 @@ export async function syncPaymentAndFulfill(referenceId: string) {
   if (status === "PAID") {
     const result = await fulfillPaidTransaction(referenceId);
     if (!result.success) {
-      return { success: false, error: result.error };
+      return {
+        success: false,
+        error: "error" in result ? result.error : "Top-up failed",
+      };
     }
     return { success: true, data: payment.data };
   }
