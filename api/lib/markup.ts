@@ -5,16 +5,16 @@ export function markup(price: number, category: MarkupCategory = "game"): number
 }
 
 function markupGame(price: number) {
-  if (price <= 20000) return applyPercentageMarkup(price, 0.04, 600);
-  if (price <= 100000) return applyPercentageMarkup(price, 0.035, 900);
-  if (price <= 300000) return applyPercentageMarkup(price, 0.03, 0);
-  return applyPercentageMarkup(price, 0.025, 0, 40000);
+  if (price <= 20000) return applyPercentageMarkup(price, 0.025, 300);
+  if (price <= 100000) return applyPercentageMarkup(price, 0.02, 500);
+  if (price <= 300000) return applyPercentageMarkup(price, 0.015, 0);
+  return applyPercentageMarkup(price, 0.012, 0, 20000);
 }
 
 function markupDigital(price: number) {
-  if (price <= 20000) return applyPercentageMarkup(price, 0.025, 400);
-  if (price <= 100000) return applyPercentageMarkup(price, 0.0225, 0);
-  return applyPercentageMarkup(price, 0.0175, 0, 8000);
+  if (price <= 20000) return applyPercentageMarkup(price, 0.015, 200);
+  if (price <= 100000) return applyPercentageMarkup(price, 0.0125, 0);
+  return applyPercentageMarkup(price, 0.008, 0, 5000);
 }
 
 function applyPercentageMarkup(price: number, percentage: number, minimum: number, maximum = Number.POSITIVE_INFINITY) {
