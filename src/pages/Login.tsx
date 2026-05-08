@@ -54,18 +54,10 @@ export default function Login() {
   const loginDirectly = async () => {
     setLoginPending(true);
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "GET",
-        headers: {
-          "x-coinin-login": form.username,
-          "x-coinin-password": form.password,
-        },
-        credentials: "include",
+      await apiGetWithHeaders<{ success?: boolean }>("/api/auth/login", {
+        "x-coinin-login": form.username,
+        "x-coinin-password": form.password,
       });
-      const result = await response.json() as { success?: boolean; error?: string };
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Gagal login");
-      }
       await utils.auth.me.invalidate();
       toast.success("Berhasil masuk");
       navigate("/");

@@ -89,9 +89,12 @@ export default function GameThumbnails() {
         body: formData,
         credentials: "include",
       });
-      const result = await response.json() as { success?: boolean; thumbnail?: string; error?: string };
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Gagal upload thumbnail");
+      const contentType = response.headers.get("content-type") ?? "";
+      const result = contentType.toLowerCase().includes("application/json")
+        ? await response.json().catch(() => null) as { success?: boolean; thumbnail?: string; error?: string } | null
+        : null;
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || `Gagal upload thumbnail (${response.status})`);
       }
       toast.success("Gambar berhasil diupload");
       await Promise.all([

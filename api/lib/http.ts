@@ -51,13 +51,11 @@ export class HttpClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = (await response
-          .json()
-          .catch(() => ({}))) as Record<string, string>;
+        const errorData = await readJson<Record<string, string>>(response);
         throw new Error(errorData.message || `HTTP Error: ${response.status}`);
       }
 
-      return (await response.json()) as T;
+      return await readJson<T>(response);
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") {
         throw new Error("Request timeout");
@@ -77,4 +75,14 @@ export class HttpClient {
   post<T>(url: string, body?: JsonBody, config?: RequestConfig) {
     return this.request<T>(url, { ...config, method: "POST", body });
   }
+}
+
+async function readJson<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    throw new Error(`Server returned non-JSON response (${response.status})`);
+  }
+  return (await response.json().catch(() => {
+    throw new Error(`Server returned invalid JSON (${response.status})`);
+  })) as T;
 }
