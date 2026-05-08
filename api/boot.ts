@@ -104,6 +104,44 @@ app.post("/api/auth/login", async (c) => {
   }
 });
 
+app.get("/api/debug/login-steps", async (c) => {
+  const started = Date.now();
+  const marks: Record<string, number | string | boolean | null> = {};
+  try {
+    marks.start = 0;
+    const user = await findUserByLogin("admin");
+    marks.findUserMs = Date.now() - started;
+    marks.hasUser = Boolean(user);
+    marks.hashScheme = user?.passwordHash?.split(":")[0] ?? null;
+
+    const passwordOk = user ? verifyPassword("andika123", user.passwordHash) : false;
+    marks.verifyMs = Date.now() - started;
+    marks.passwordOk = passwordOk;
+
+    if (user) {
+      const token = await signSessionToken({
+        unionId: user.unionId,
+        clientId: "local",
+      });
+      marks.signMs = Date.now() - started;
+      marks.tokenLength = token.length;
+
+      await getDb()
+        .update(users)
+        .set({ lastSignInAt: new Date(), updatedAt: new Date() })
+        .where(eq(users.id, user.id));
+      marks.updateMs = Date.now() - started;
+    }
+
+    marks.totalMs = Date.now() - started;
+    return c.json(marks);
+  } catch (error) {
+    marks.error = error instanceof Error ? error.message : "Unknown error";
+    marks.totalMs = Date.now() - started;
+    return c.json(marks, 500);
+  }
+});
+
 // Payment callback endpoint (HTTP, not tRPC)
 app.get("/api/callback", (c) =>
   c.json({
