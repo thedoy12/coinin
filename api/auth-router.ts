@@ -57,7 +57,7 @@ export const authRouter = createRouter({
         clientId: "local",
       });
       appendSessionCookie(ctx.resHeaders, ctx.req.headers, token);
-      return { success: true, user };
+      return { success: true, user: toSafeUser(user) };
     }),
   login: publicQuery
     .input(
@@ -86,13 +86,29 @@ export const authRouter = createRouter({
         clientId: "local",
       });
       appendSessionCookie(ctx.resHeaders, ctx.req.headers, token);
-      return { success: true, user };
+      return { success: true, user: toSafeUser(user) };
     }),
   logout: authedQuery.mutation(async ({ ctx }) => {
     appendClearSessionCookie(ctx.resHeaders, ctx.req.headers);
     return { success: true };
   }),
 });
+
+function toSafeUser(user: typeof users.$inferSelect) {
+  return {
+    id: user.id,
+    unionId: user.unionId,
+    username: user.username,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    authProvider: user.authProvider,
+    role: user.role,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    lastSignInAt: user.lastSignInAt,
+  };
+}
 
 function guardAuthAttempt(request: Request, login: string) {
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
