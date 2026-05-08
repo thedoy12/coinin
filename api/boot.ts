@@ -22,6 +22,11 @@ import { appendSessionCookie } from "./lib/cookies";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
+app.onError((error, c) => {
+  console.error("Unhandled API error:", error);
+  return c.json({ error: "Internal server error" }, 500);
+});
+
 app.use("/api/trpc/*", rateLimit({ windowMs: 60_000, max: 120, keyPrefix: "trpc" }));
 app.use("/api/status/*", rateLimit({ windowMs: 60_000, max: 60, keyPrefix: "status" }));
 
@@ -321,6 +326,9 @@ app.use("/api/trpc/*", async (c) => {
     req: c.req.raw,
     router: appRouter,
     createContext,
+    onError({ error, path }) {
+      console.error(`tRPC error${path ? ` on ${path}` : ""}:`, error);
+    },
   });
 });
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));

@@ -12,19 +12,23 @@ export async function writeProviderApiLog(params: {
   error?: string | null;
   durationMs: number;
 }) {
-  const { getDb } = await import("../queries/connection");
-  await getDb().insert(providerApiLogs).values({
-    provider: params.provider,
-    referenceId: params.referenceId ?? null,
-    method: params.method,
-    endpoint: params.endpoint,
-    requestPayload: stringifyPayload(params.requestPayload),
-    responsePayload: stringifyPayload(params.responsePayload),
-    statusCode: params.statusCode ?? null,
-    success: params.success ? 1 : 0,
-    error: params.error ?? null,
-    durationMs: params.durationMs,
-  });
+  try {
+    const { getDb } = await import("../queries/connection");
+    await getDb().insert(providerApiLogs).values({
+      provider: params.provider,
+      referenceId: params.referenceId ?? null,
+      method: params.method,
+      endpoint: params.endpoint,
+      requestPayload: stringifyPayload(params.requestPayload),
+      responsePayload: stringifyPayload(params.responsePayload),
+      statusCode: params.statusCode ?? null,
+      success: params.success ? 1 : 0,
+      error: params.error ?? null,
+      durationMs: params.durationMs,
+    });
+  } catch (error) {
+    console.error("Provider API log write failed:", error);
+  }
 }
 
 function stringifyPayload(value: unknown) {
