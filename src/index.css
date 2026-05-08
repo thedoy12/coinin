@@ -77,19 +77,82 @@
 @layer utilities {
   .gaming-bg {
     background:
-      linear-gradient(135deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.93)),
-      linear-gradient(116deg, transparent 0 18%, rgba(168, 85, 247, 0.18) 19% 24%, transparent 25% 100%),
-      linear-gradient(72deg, transparent 0 58%, rgba(34, 211, 238, 0.12) 59% 64%, transparent 65% 100%),
-      linear-gradient(150deg, transparent 0 70%, rgba(236, 72, 153, 0.12) 71% 77%, transparent 78% 100%);
+      radial-gradient(ellipse at 50% 0%, rgba(49, 46, 129, 0.24), transparent 42%),
+      linear-gradient(135deg, rgba(2, 6, 23, 0.98), rgba(8, 13, 31, 0.96) 48%, rgba(15, 23, 42, 0.94)),
+      linear-gradient(116deg, transparent 0 18%, rgba(168, 85, 247, 0.12) 19% 24%, transparent 25% 100%),
+      linear-gradient(72deg, transparent 0 58%, rgba(34, 211, 238, 0.1) 59% 64%, transparent 65% 100%);
   }
 
   .neon-grid {
     background-image:
-      linear-gradient(rgba(245, 158, 11, 0.09) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(34, 211, 238, 0.08) 1px, transparent 1px);
-    background-size: 42px 42px;
+      linear-gradient(rgba(168, 85, 247, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
     animation: grid-drift 18s linear infinite;
     mask-image: linear-gradient(to bottom, transparent, black 15%, black 78%, transparent);
+  }
+
+  .cyber-backdrop {
+    z-index: 0;
+    background:
+      linear-gradient(112deg, transparent 0 9%, rgba(34, 211, 238, 0.16) 9.4% 9.8%, transparent 10.2% 100%),
+      linear-gradient(112deg, transparent 0 18%, rgba(168, 85, 247, 0.18) 18.4% 24%, transparent 24.6% 100%),
+      linear-gradient(68deg, transparent 0 70%, rgba(34, 211, 238, 0.12) 70.4% 76%, transparent 76.6% 100%),
+      linear-gradient(145deg, transparent 0 80%, rgba(236, 72, 153, 0.12) 80.4% 86%, transparent 86.6% 100%),
+      repeating-linear-gradient(90deg, transparent 0 118px, rgba(168, 85, 247, 0.035) 119px 121px, transparent 122px 240px);
+    opacity: 0.68;
+    mix-blend-mode: screen;
+    animation: backdrop-drift 16s ease-in-out infinite;
+    mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent);
+  }
+
+  .cyber-backdrop::before,
+  .cyber-backdrop::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .cyber-backdrop::before {
+    inset: 8% -12% auto -8%;
+    height: 28rem;
+    background:
+      linear-gradient(100deg, transparent 0 16%, rgba(168, 85, 247, 0.18) 17% 28%, transparent 29% 100%),
+      linear-gradient(100deg, transparent 0 54%, rgba(34, 211, 238, 0.12) 55% 60%, transparent 61% 100%);
+    clip-path: polygon(0 28%, 82% 0, 100% 22%, 18% 100%);
+    filter: blur(4px);
+    opacity: 0.68;
+    animation: backdrop-panel-slide 12s ease-in-out infinite;
+  }
+
+  .cyber-backdrop::after {
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.025) 0,
+        rgba(255, 255, 255, 0.025) 1px,
+        transparent 1px,
+        transparent 13px
+      );
+    opacity: 0.34;
+    animation: scanline-slide 7s linear infinite;
+  }
+
+  .cyber-horizon {
+    z-index: 0;
+    height: 42vh;
+    background-image:
+      linear-gradient(rgba(34, 211, 238, 0.14) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(168, 85, 247, 0.12) 1px, transparent 1px),
+      linear-gradient(to top, rgba(168, 85, 247, 0.14), transparent 64%);
+    background-size: 46px 46px, 46px 46px, 100% 100%;
+    transform: perspective(620px) rotateX(66deg) translateY(30%);
+    transform-origin: bottom center;
+    opacity: 0.58;
+    filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.18));
+    animation: horizon-grid-drift 12s linear infinite;
+    mask-image: linear-gradient(to top, black, rgba(0, 0, 0, 0.86) 50%, transparent 95%);
   }
 
   .scanline {
@@ -586,7 +649,38 @@
     background-position: 0 0;
   }
   to {
-    background-position: 42px 42px;
+    background-position: 48px 48px;
+  }
+}
+
+@keyframes backdrop-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.58;
+  }
+  50% {
+    transform: translate3d(-1.5rem, 0.6rem, 0);
+    opacity: 0.78;
+  }
+}
+
+@keyframes backdrop-panel-slide {
+  0%,
+  100% {
+    transform: translateX(-2%) skewX(-8deg);
+  }
+  50% {
+    transform: translateX(4%) skewX(-8deg);
+  }
+}
+
+@keyframes horizon-grid-drift {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: 46px 46px, 46px 46px, 0 0;
   }
 }
 
@@ -755,6 +849,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .neon-grid,
+  .cyber-backdrop,
+  .cyber-backdrop::before,
+  .cyber-backdrop::after,
+  .cyber-horizon,
   .scanline,
   .coin-float,
   .coin-float-delayed,

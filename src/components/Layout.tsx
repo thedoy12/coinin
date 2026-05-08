@@ -10,6 +10,8 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col gaming-bg text-white relative overflow-hidden">
       <div className="pointer-events-none fixed inset-0 neon-grid opacity-50" />
+      <div className="pointer-events-none fixed inset-0 cyber-backdrop" />
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 cyber-horizon" />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-40 scanline opacity-40" />
       {/* Navbar */}
       <nav className="sticky top-0 z-50 border-b border-cyan-300/20 bg-slate-950/85 backdrop-blur-xl">
