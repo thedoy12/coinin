@@ -155,11 +155,15 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-        <div className="hud-frame cinematic-stage min-h-[620px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
+        <div className="hud-frame cinematic-stage cyber-hero-shell min-h-[620px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
           <div className="hero-violet-aura" />
           <div className="hero-energy-ring" />
           <div className="hero-energy-beam" />
           <div className="hero-wave-plane hidden lg:block" />
+          <div className="cyber-scanlines" />
+          <div className="cyber-slice cyber-slice-one" />
+          <div className="cyber-slice cyber-slice-two" />
+          <div className="cyber-slice cyber-slice-three" />
           <div className="relative z-10 flex min-h-[560px] flex-col">
             <div className="flex items-center justify-between text-xs font-black uppercase tracking-[0.28em] text-cyan-100/80">
               <span>CoinIn Arcade</span>
@@ -178,6 +182,7 @@ export default function Home() {
                     Game Cepat
                   </span>
                 </h1>
+                <div className="cyber-title-underline mt-5" />
                 <p className="mt-6 max-w-2xl text-base font-semibold leading-8 text-slate-200 sm:text-lg">
                   Pilih game favorit, bayar pakai QRIS/VA/e-wallet, lalu pantau status order secara real-time. Cepat, jelas, dan siap dipakai di device mana pun.
                 </p>
@@ -224,7 +229,7 @@ export default function Home() {
                     ["QRIS", "payment"],
                     ["Live", "status"],
                   ].map(([value, label]) => (
-                    <div key={value} className="angle-card border border-cyan-300/25 bg-slate-950/70 p-4">
+                    <div key={value} className="cyber-stat-card angle-card border border-cyan-300/25 bg-slate-950/70 p-4">
                       <p className="text-2xl font-black text-white">{value}</p>
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200/70">{label}</p>
                     </div>
