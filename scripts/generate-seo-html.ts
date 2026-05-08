@@ -10,7 +10,7 @@ type SeoPage = {
 
 const distDir = path.resolve("dist/public");
 const indexPath = path.join(distDir, "index.html");
-const baseUrl = "https://coinin.store";
+const baseUrl = "https://www.coinin.store";
 
 const pages: SeoPage[] = [
   {

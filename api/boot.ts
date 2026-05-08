@@ -25,6 +25,7 @@ import { appendClearSessionCookie, appendSessionCookie } from "./lib/cookies";
 import { publicSafeGameFilter, publicSafeProductFilter } from "./lib/catalog-safety";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
+const publicSiteUrl = "https://www.coinin.store";
 
 app.onError((error, c) => {
   console.error("Unhandled API error:", error);
@@ -37,7 +38,7 @@ app.use("/api/status/*", rateLimit({ windowMs: 60_000, max: 60, keyPrefix: "stat
 app.get("/robots.txt", (c) => c.text(`User-agent: *
 Allow: /
 
-Sitemap: ${env.appUrl}/sitemap.xml
+Sitemap: ${publicSiteUrl}/sitemap.xml
 `));
 
 app.get("/sitemap.xml", async (c) => {
@@ -47,16 +48,16 @@ app.get("/sitemap.xml", async (c) => {
     .where(eq(games.isActive, 1));
   const now = new Date().toISOString();
   const urls = [
-    { loc: `${env.appUrl}/`, priority: "1.0", changefreq: "daily", lastmod: now },
-    { loc: `${env.appUrl}/games`, priority: "0.9", changefreq: "daily", lastmod: now },
-    { loc: `${env.appUrl}/top-up-game`, priority: "0.95", changefreq: "weekly", lastmod: now },
-    { loc: `${env.appUrl}/status`, priority: "0.5", changefreq: "weekly", lastmod: now },
-    { loc: `${env.appUrl}/tentang-kami`, priority: "0.55", changefreq: "monthly", lastmod: now },
-    { loc: `${env.appUrl}/kontak`, priority: "0.5", changefreq: "monthly", lastmod: now },
-    { loc: `${env.appUrl}/kebijakan-privasi`, priority: "0.3", changefreq: "yearly", lastmod: now },
-    { loc: `${env.appUrl}/ketentuan-layanan`, priority: "0.3", changefreq: "yearly", lastmod: now },
+    { loc: `${publicSiteUrl}/`, priority: "1.0", changefreq: "daily", lastmod: now },
+    { loc: `${publicSiteUrl}/games`, priority: "0.9", changefreq: "daily", lastmod: now },
+    { loc: `${publicSiteUrl}/top-up-game`, priority: "0.95", changefreq: "weekly", lastmod: now },
+    { loc: `${publicSiteUrl}/status`, priority: "0.5", changefreq: "weekly", lastmod: now },
+    { loc: `${publicSiteUrl}/tentang-kami`, priority: "0.55", changefreq: "monthly", lastmod: now },
+    { loc: `${publicSiteUrl}/kontak`, priority: "0.5", changefreq: "monthly", lastmod: now },
+    { loc: `${publicSiteUrl}/kebijakan-privasi`, priority: "0.3", changefreq: "yearly", lastmod: now },
+    { loc: `${publicSiteUrl}/ketentuan-layanan`, priority: "0.3", changefreq: "yearly", lastmod: now },
     ...activeGames.map((game) => ({
-      loc: `${env.appUrl}/game/${game.slug}`,
+      loc: `${publicSiteUrl}/game/${game.slug}`,
       priority: "0.85",
       changefreq: "daily",
       lastmod: game.updatedAt?.toISOString?.() ?? now,
