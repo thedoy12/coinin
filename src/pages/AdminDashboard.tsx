@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useSEO } from "@/hooks/useSEO";
+import { useAdminAction } from "@/lib/admin-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -166,88 +167,116 @@ export default function AdminDashboard() {
     popupSettingsQuery.refetch();
   };
 
-  const updateStatus = trpc.admin.updateStatus.useMutation({
+  const onAdminActionError = (error: Error) => toast.error(error.message);
+
+  const updateStatus = useAdminAction<{ referenceId: string; status: "success" | "failed" }>({
+    action: "updateStatus",
     onSuccess: () => {
       toast.success("Status transaksi diperbarui");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const syncPayment = trpc.admin.syncPayment.useMutation({
+  const syncPayment = useAdminAction<{ referenceId: string }>({
+    action: "syncPayment",
     onSuccess: () => {
       toast.success("Status payment disinkronkan");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const retryTopup = trpc.admin.retryTopup.useMutation({
+  const retryTopup = useAdminAction<{ referenceId: string }>({
+    action: "retryTopup",
     onSuccess: () => {
       toast.success("Top-up diproses ulang");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const expireOld = trpc.admin.expireOld.useMutation({
+  const expireOld = useAdminAction<void, { count: number }>({
+    action: "expireOld",
     onSuccess: (result) => {
       toast.success(`${result.count} transaksi kadaluarsa diperbarui`);
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const syncTopups = trpc.admin.syncTopups.useMutation({
+  const syncTopups = useAdminAction<void, { count: number }>({
+    action: "syncTopups",
     onSuccess: (result) => {
       toast.success(`${result.count} top-up processing disinkronkan`);
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const syncCatalog = trpc.admin.syncCatalog.useMutation({
+  const syncCatalog = useAdminAction<void, { totalRows: number }>({
+    action: "syncCatalog",
     onSuccess: (result) => {
       toast.success(`Katalog provider disinkronkan: ${result.totalRows} produk aktif`);
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const updateUserRole = trpc.admin.updateUserRole.useMutation({
+  const updateUserRole = useAdminAction<{ userId: number; role: "admin" | "user" }>({
+    action: "updateUserRole",
     onSuccess: () => {
       toast.success("Role akun diperbarui");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const resetUserPassword = trpc.admin.resetUserPassword.useMutation({
+  const resetUserPassword = useAdminAction<{ userId: number; password: string }>({
+    action: "resetUserPassword",
     onSuccess: () => {
       toast.success("Password akun berhasil direset");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const updateProduct = trpc.admin.updateProduct.useMutation({
+  const updateProduct = useAdminAction<{
+    productId: number;
+    priceModal?: number;
+    priceSell?: number;
+    providerCode?: string;
+    productType?: ProductType;
+    isActive?: boolean;
+  }>({
+    action: "updateProduct",
     onSuccess: () => {
       toast.success("Produk diperbarui");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const createProduct = trpc.admin.createProduct.useMutation({
+  const createProduct = useAdminAction<{
+    gameId: number;
+    name: string;
+    providerCode: string;
+    productType: ProductType;
+    priceModal: number;
+    priceSell: number;
+    isActive: boolean;
+  }>({
+    action: "createProduct",
     onSuccess: () => {
       toast.success("Produk baru ditambahkan");
       setProductForm(emptyProductForm);
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const importProducts = trpc.admin.importProducts.useMutation({
+  const importProducts = useAdminAction<{ rows: ProductImportRow[] }, { created: number; updated: number; skipped: unknown[]; gamesCreated?: number }>({
+    action: "importProducts",
     onSuccess: (result) => {
       const skippedText = result.skipped.length ? `, ${result.skipped.length} dilewati` : "";
       const gamesText = result.gamesCreated ? `, ${result.gamesCreated} game baru` : "";
@@ -256,36 +285,57 @@ export default function AdminDashboard() {
       setProductImportCount(null);
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const createGame = trpc.admin.createGame.useMutation({
+  const createGame = useAdminAction<typeof emptyGameForm>({
+    action: "createGame",
     onSuccess: () => {
       toast.success("Game baru ditambahkan");
       setGameForm(emptyGameForm);
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const updateGame = trpc.admin.updateGame.useMutation({
+  const updateGame = useAdminAction<{
+    gameId: number;
+    name?: string;
+    slug?: string;
+    thumbnail?: string;
+    category?: string;
+    instructions?: string;
+    requiresZoneId?: boolean;
+    isActive?: boolean;
+  }>({
+    action: "updateGame",
     onSuccess: () => {
       toast.success("Game diperbarui");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const updatePopupSettings = trpc.admin.updatePopupSettings.useMutation({
+  const updatePopupSettings = useAdminAction<{
+    isActive: boolean;
+    title: string;
+    description: string;
+    imageUrl?: string;
+    buttonText: string;
+    buttonUrl: string;
+    displayDelayMs: number;
+  }>({
+    action: "updatePopupSettings",
     onSuccess: () => {
       setPopupDraft(null);
       toast.success("Setting popup disimpan");
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
-  const cleanupDatabase = trpc.admin.cleanupDatabase.useMutation({
+  const cleanupDatabase = useAdminAction<{ target: CleanupTarget; olderThanDays: number; password: string; confirmation: string }, { deleted: number }>({
+    action: "cleanupDatabase",
     onSuccess: (result) => {
       toast.success(`${result.deleted} data berhasil dihapus`);
       setCleanupForm((current) => ({
@@ -295,7 +345,7 @@ export default function AdminDashboard() {
       }));
       refreshAll();
     },
-    onError: (error) => toast.error(error.message),
+    onError: onAdminActionError,
   });
 
   const totals = useMemo(() => {

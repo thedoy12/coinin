@@ -60,7 +60,10 @@ export async function apiGet<T>(url: string, params: Record<string, string | num
 }
 
 export async function apiGetWithHeaders<T>(url: string, headers: Record<string, string | number | undefined>): Promise<T> {
-  const response = await fetch(url, {
+  const requestUrl = new URL(url, window.location.origin);
+  requestUrl.searchParams.set("_", String(Date.now()));
+
+  const response = await fetch(requestUrl.toString(), {
     method: "GET",
     credentials: "include",
     cache: "no-store",

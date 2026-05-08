@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import type { HttpBindings } from "@hono/node-server";
+import { TRPCError } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
@@ -466,6 +467,32 @@ app.post("/api/admin/game-thumbnail", async (c) => {
   }
 });
 
+app.get("/api/admin/action", async (c) => {
+  c.header("Cache-Control", "no-store");
+  try {
+    const user = await authenticateRequest(c.req.raw.headers).catch(() => null);
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    if (user.role !== "admin") {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+
+    const action = c.req.header("x-coinin-admin-action") || "";
+    const input = parseAdminActionInput(c.req.header("x-coinin-admin-input"));
+    const caller = appRouter.createCaller({
+      req: c.req.raw,
+      resHeaders: new Headers(),
+      user,
+    });
+
+    const result = await runAdminAction(caller, action, input);
+    return c.json(result);
+  } catch (error) {
+    return handlePublicApiError(c, error, "Aksi admin gagal");
+  }
+});
+
 // Public status check endpoint
 app.get("/api/status/:referenceId", async (c) => {
   const referenceId = c.req.param("referenceId");
@@ -812,6 +839,10 @@ function handlePublicApiError(c: Context, error: unknown, fallback: string) {
   if (error instanceof PublicApiError) {
     return c.json({ error: error.message }, error.status);
   }
+  if (error instanceof TRPCError) {
+    const status = trpcErrorStatus(error.code);
+    return c.json({ error: error.message }, status);
+  }
   if (error instanceof z.ZodError) {
     return c.json({ error: error.issues[0]?.message || "Input tidak valid" }, 400);
   }
@@ -825,5 +856,76 @@ class PublicApiError extends Error {
     public readonly status: 400 | 404
   ) {
     super(message);
+  }
+}
+
+function trpcErrorStatus(code: TRPCError["code"]) {
+  switch (code) {
+    case "BAD_REQUEST":
+    case "PARSE_ERROR":
+      return 400;
+    case "UNAUTHORIZED":
+      return 401;
+    case "FORBIDDEN":
+      return 403;
+    case "NOT_FOUND":
+      return 404;
+    case "CONFLICT":
+      return 409;
+    case "TOO_MANY_REQUESTS":
+      return 429;
+    default:
+      return 500;
+  }
+}
+
+function parseAdminActionInput(value: string | undefined) {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(decodeURIComponent(value)) as unknown;
+  } catch {
+    throw new PublicApiError("Input admin tidak valid", 400);
+  }
+}
+
+async function runAdminAction(
+  caller: ReturnType<typeof appRouter.createCaller>,
+  action: string,
+  input: unknown
+) {
+  const admin = caller.admin;
+  switch (action) {
+    case "updateStatus":
+      return admin.updateStatus(input as never);
+    case "syncPayment":
+      return admin.syncPayment(input as never);
+    case "retryTopup":
+      return admin.retryTopup(input as never);
+    case "expireOld":
+      return admin.expireOld();
+    case "syncTopups":
+      return admin.syncTopups();
+    case "syncCatalog":
+      return admin.syncCatalog();
+    case "updatePopupSettings":
+      return admin.updatePopupSettings(input as never);
+    case "cleanupDatabase":
+      return admin.cleanupDatabase(input as never);
+    case "updateUserRole":
+      return admin.updateUserRole(input as never);
+    case "resetUserPassword":
+      return admin.resetUserPassword(input as never);
+    case "updateProduct":
+      return admin.updateProduct(input as never);
+    case "createProduct":
+      return admin.createProduct(input as never);
+    case "importProducts":
+      return admin.importProducts(input as never);
+    case "createGame":
+      return admin.createGame(input as never);
+    case "updateGame":
+      return admin.updateGame(input as never);
+    default:
+      throw new PublicApiError("Aksi admin tidak dikenal", 400);
   }
 }

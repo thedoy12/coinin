@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAction } from "@/lib/admin-actions";
 import { ImageUp, Link as LinkIcon, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,7 +42,8 @@ export default function GameThumbnails() {
     ) ?? [];
   }, [games, search]);
 
-  const updateGame = trpc.admin.updateGame.useMutation({
+  const updateGame = useAdminAction<{ gameId: number; thumbnail: string }>({
+    action: "updateGame",
     onSuccess: async () => {
       toast.success("Thumbnail berhasil diperbarui");
       await Promise.all([
