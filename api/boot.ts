@@ -42,24 +42,29 @@ Sitemap: ${env.appUrl}/sitemap.xml
 
 app.get("/sitemap.xml", async (c) => {
   const activeGames = await getDb()
-    .select({ slug: games.slug })
+    .select({ slug: games.slug, updatedAt: games.updatedAt })
     .from(games)
     .where(eq(games.isActive, 1));
+  const now = new Date().toISOString();
   const urls = [
-    { loc: `${env.appUrl}/`, priority: "1.0" },
-    { loc: `${env.appUrl}/status`, priority: "0.6" },
-    { loc: `${env.appUrl}/tentang-kami`, priority: "0.5" },
-    { loc: `${env.appUrl}/kontak`, priority: "0.5" },
-    { loc: `${env.appUrl}/kebijakan-privasi`, priority: "0.4" },
-    { loc: `${env.appUrl}/ketentuan-layanan`, priority: "0.4" },
+    { loc: `${env.appUrl}/`, priority: "1.0", changefreq: "daily", lastmod: now },
+    { loc: `${env.appUrl}/games`, priority: "0.9", changefreq: "daily", lastmod: now },
+    { loc: `${env.appUrl}/top-up-game`, priority: "0.95", changefreq: "weekly", lastmod: now },
+    { loc: `${env.appUrl}/status`, priority: "0.5", changefreq: "weekly", lastmod: now },
+    { loc: `${env.appUrl}/tentang-kami`, priority: "0.55", changefreq: "monthly", lastmod: now },
+    { loc: `${env.appUrl}/kontak`, priority: "0.5", changefreq: "monthly", lastmod: now },
+    { loc: `${env.appUrl}/kebijakan-privasi`, priority: "0.3", changefreq: "yearly", lastmod: now },
+    { loc: `${env.appUrl}/ketentuan-layanan`, priority: "0.3", changefreq: "yearly", lastmod: now },
     ...activeGames.map((game) => ({
       loc: `${env.appUrl}/game/${game.slug}`,
-      priority: "0.8",
+      priority: "0.85",
+      changefreq: "daily",
+      lastmod: game.updatedAt?.toISOString?.() ?? now,
     })),
   ];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((url) => `  <url><loc>${url.loc}</loc><priority>${url.priority}</priority></url>`).join("\n")}
+${urls.map((url) => `  <url><loc>${url.loc}</loc><lastmod>${url.lastmod}</lastmod><changefreq>${url.changefreq}</changefreq><priority>${url.priority}</priority></url>`).join("\n")}
 </urlset>`;
   return c.text(xml, 200, { "Content-Type": "application/xml; charset=utf-8" });
 });

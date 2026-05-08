@@ -38,6 +38,11 @@ export default function Layout() {
                   <span>Games</span>
                 </Button>
               </Link>
+              <Link to="/top-up-game" className="hidden md:block">
+                <Button variant="ghost" size="sm" className="rounded-none px-2 text-slate-300 hover:bg-violet-400/10 hover:text-violet-100 sm:px-3">
+                  Top Up
+                </Button>
+              </Link>
               <Link to="/status">
                 <Button variant="ghost" size="sm" className="rounded-none px-2 text-slate-300 hover:bg-cyan-300/10 hover:text-cyan-100 sm:px-3">
                   <Search className="w-4 h-4 sm:mr-1.5" />

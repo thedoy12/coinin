@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GameCard } from "@/components/GameCard";
+import { useJsonLd } from "@/hooks/useJsonLd";
 import { useSEO } from "@/hooks/useSEO";
 import { Gamepad2, Search } from "lucide-react";
 
@@ -11,10 +12,27 @@ export default function Games() {
   const { data: games, isLoading } = trpc.game.list.useQuery();
 
   useSEO({
-    title: "Katalog Game Top Up | CoinIn",
-    description: "Lihat katalog 35 game teratas, pulsa, dan token PLN yang tersedia di CoinIn.",
+    title: "Katalog Top Up Game, Pulsa, dan Token PLN | CoinIn",
+    description: "Cari katalog top up game online, pulsa, e-wallet, dan token PLN di CoinIn. Pilih Mobile Legends, Free Fire, PUBG Mobile, Honor of Kings, dan layanan populer lain.",
     canonicalPath: "/games",
-    keywords: "katalog top up game, pulsa, token pln",
+    keywords: "katalog top up game, top up mobile legends, top up free fire, pulsa online, token pln",
+  });
+
+  useJsonLd("coinin-games-schema", {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Katalog Top Up Game CoinIn",
+    url: `${window.location.origin}/games`,
+    description: "Katalog layanan top up game online, pulsa, dan token PLN di CoinIn.",
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: (games ?? []).slice(0, 24).map((game, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: game.name,
+        url: `${window.location.origin}/game/${game.slug}`,
+      })),
+    },
   });
 
   const categories = useMemo(

@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 
 const Games = lazy(() => import("./pages/Games"));
+const TopUpGameLanding = lazy(() => import("./pages/TopUpGameLanding"));
 const GameDetail = lazy(() => import("./pages/GameDetail"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const Status = lazy(() => import("./pages/Status"));
@@ -38,6 +39,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/top-up-game" element={<TopUpGameLanding />} />
           <Route path="/games" element={<Games />} />
           <Route path="/game/:slug" element={<GameDetail />} />
           <Route path="/checkout/:referenceId" element={<Checkout />} />

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useSEO } from "@/hooks/useSEO";
+import { useJsonLd } from "@/hooks/useJsonLd";
 import { apiGetWithHeaders } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Gamepad2, User, Hash, ShoppingCart, Sparkles, Coins } from "lucide-react";
@@ -43,6 +44,72 @@ export default function GameDetail() {
     keywords: game
       ? `top up ${game.name}, top up ${game.slug}, top up game, qris game`
       : "top up game, qris game",
+  });
+
+  useJsonLd("coinin-game-detail-schema", {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Beranda", item: window.location.origin },
+          { "@type": "ListItem", position: 2, name: "Games", item: `${window.location.origin}/games` },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: game?.name ?? "Top Up Game",
+            item: slug ? `${window.location.origin}/game/${slug}` : window.location.href,
+          },
+        ],
+      },
+      {
+        "@type": "Service",
+        name: game ? `Top Up ${game.name}` : "Top Up Game Online",
+        serviceType: "Top up game online",
+        provider: {
+          "@type": "Organization",
+          name: "CoinIn",
+          url: window.location.origin,
+        },
+        areaServed: {
+          "@type": "Country",
+          name: "Indonesia",
+        },
+        url: slug ? `${window.location.origin}/game/${slug}` : window.location.href,
+        description: game
+          ? `Layanan top up ${game.name} di CoinIn dengan pembayaran online dan status transaksi real-time.`
+          : "Layanan top up game online di CoinIn.",
+        offers: (products ?? []).slice(0, 12).map((product) => ({
+          "@type": "Offer",
+          name: product.name,
+          price: product.priceSell,
+          priceCurrency: "IDR",
+          availability: product.isActive === 1 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          url: slug ? `${window.location.origin}/game/${slug}` : window.location.href,
+        })),
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: game ? `Bagaimana cara top up ${game.name} di CoinIn?` : "Bagaimana cara top up game di CoinIn?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Pilih produk, masukkan data tujuan, lanjut ke checkout, selesaikan pembayaran, lalu cek status transaksi dengan Reference ID.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "Apakah status order bisa dicek?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Ya, setiap order memiliki Reference ID yang bisa digunakan untuk mengecek status pembayaran dan proses top up.",
+            },
+          },
+        ],
+      },
+    ],
   });
 
   const handleSubmit = async () => {
