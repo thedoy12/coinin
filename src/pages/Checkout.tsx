@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSEO } from "@/hooks/useSEO";
+import { apiPost } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Copy, Check, QrCode, User, Mail, Phone, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ export default function Checkout() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
   useSEO({
     title: "Checkout Transaksi Digital | CoinIn",
@@ -37,20 +39,6 @@ export default function Checkout() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const createPayment = trpc.payment.createQris.useMutation({
-    onSuccess: (result) => {
-      if (result.success && result.data?.checkout_url) {
-        toast.success("Halaman pembayaran berhasil dibuat!");
-        window.location.href = result.data.checkout_url;
-      } else {
-        toast.error(result.error || "Gagal membuat pembayaran");
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message || "Gagal membuat pembayaran");
-    },
-  });
-
   const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -62,7 +50,7 @@ export default function Checkout() {
     }
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!referenceId || !customerName || !customerEmail || !customerPhone) {
       toast.error("Lengkapi data pelanggan terlebih dahulu");
       return;
@@ -75,13 +63,27 @@ export default function Checkout() {
       toast.error("Nomor WhatsApp belum valid");
       return;
     }
+    if (isCreatingPayment) return;
 
-    createPayment.mutate({
-      referenceId,
-      customerName: customerName.trim(),
-      customerEmail: customerEmail.trim(),
-      customerPhone: customerPhone.trim(),
-    });
+    setIsCreatingPayment(true);
+    try {
+      const result = await apiPost<PaymentCreateResponse>("/api/payment/create-qris", {
+        referenceId,
+        customerName: customerName.trim(),
+        customerEmail: customerEmail.trim(),
+        customerPhone: customerPhone.trim(),
+      });
+      if (result.success && result.data?.checkout_url) {
+        toast.success("Halaman pembayaran berhasil dibuat!");
+        window.location.href = result.data.checkout_url;
+      } else {
+        toast.error(result.error || "Gagal membuat pembayaran");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal membuat pembayaran");
+    } finally {
+      setIsCreatingPayment(false);
+    }
   };
 
   if (isLoading) {
@@ -114,7 +116,7 @@ export default function Checkout() {
     Boolean(customerName.trim()) &&
     isValidEmail(customerEmail) &&
     isValidPhone(customerPhone) &&
-    !createPayment.isPending;
+    !isCreatingPayment;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -268,7 +270,7 @@ export default function Checkout() {
                 className="angle-card w-full rounded-none bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black h-12 shadow-lg shadow-cyan-500/20"
               >
                 <QrCode className="w-4 h-4 mr-2" />
-                {createPayment.isPending ? "Memproses..." : "Bayar Sekarang"}
+                {isCreatingPayment ? "Memproses..." : "Bayar Sekarang"}
               </Button>
               <p className="text-xs text-center text-slate-500">
                 Pembayaran aman melalui sistem pembayaran CoinIn
@@ -332,3 +334,11 @@ function isValidEmail(value: string) {
 function isValidPhone(value: string) {
   return /^\+?[0-9][0-9\s-]{6,18}[0-9]$/.test(value.trim());
 }
+
+type PaymentCreateResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    checkout_url?: string | null;
+  };
+};

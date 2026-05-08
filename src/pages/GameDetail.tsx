@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useSEO } from "@/hooks/useSEO";
+import { apiPost } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Gamepad2, User, Hash, ShoppingCart, Sparkles, Coins } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ export default function GameDetail() {
   const [activeProductTab, setActiveProductTab] = useState<ProductTabValue>("general");
   const [userId, setUserId] = useState("");
   const [zoneId, setZoneId] = useState("");
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const { data: game, isLoading: gameLoading } = trpc.game.bySlug.useQuery(
     { slug: slug || "" },
@@ -43,20 +45,10 @@ export default function GameDetail() {
       : "top up game, qris game",
   });
 
-  const createOrder = trpc.order.create.useMutation({
-    onSuccess: (data) => {
-      toast.success("Order berhasil dibuat!");
-      navigate(`/checkout/${data.referenceId}`);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Gagal membuat order");
-    },
-  });
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const cleanedUserId = userId.trim();
     const cleanedZoneId = zoneId.trim();
-    if (!selectedProduct || !cleanedUserId || !game) return;
+    if (!selectedProduct || !cleanedUserId || !game || isCreatingOrder) return;
     if (game.requiresZoneId === 1 && !cleanedZoneId) {
       toast.error("Zone ID / Server wajib diisi untuk game ini");
       return;
@@ -64,11 +56,20 @@ export default function GameDetail() {
     const product = products?.find((p) => p.id === selectedProduct);
     if (!product) return;
 
-    createOrder.mutate({
-      productId: product.id,
-      userIdGame: cleanedUserId,
-      zoneId: cleanedZoneId || undefined,
-    });
+    setIsCreatingOrder(true);
+    try {
+      const data = await apiPost<{ referenceId: string; status: string; price: number }>("/api/order/create", {
+        productId: product.id,
+        userIdGame: cleanedUserId,
+        zoneId: cleanedZoneId || undefined,
+      });
+      toast.success("Order berhasil dibuat!");
+      navigate(`/checkout/${data.referenceId}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal membuat order");
+    } finally {
+      setIsCreatingOrder(false);
+    }
   };
 
   if (gameLoading) {
@@ -254,11 +255,11 @@ export default function GameDetail() {
 
               <Button
                 onClick={handleSubmit}
-                disabled={!selectedProduct || !userId.trim() || (targetCopy.showZone && game.requiresZoneId === 1 && !zoneId.trim()) || createOrder.isPending}
+                disabled={!selectedProduct || !userId.trim() || (targetCopy.showZone && game.requiresZoneId === 1 && !zoneId.trim()) || isCreatingOrder}
                 className="angle-card w-full rounded-none bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black h-12 shadow-lg shadow-cyan-500/20"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                {createOrder.isPending ? "Memproses..." : "Beli Sekarang"}
+                {isCreatingOrder ? "Memproses..." : "Beli Sekarang"}
               </Button>
             </CardContent>
           </Card>

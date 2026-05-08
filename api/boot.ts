@@ -5,13 +5,15 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
+import { nanoid } from "nanoid";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 import { getDb } from "./queries/connection";
-import { games, transactions, users } from "@db/schema";
-import { eq, sql } from "drizzle-orm";
-import { parsePaymentNotification, verifyPaymentCallback } from "./lib/payment";
+import { games, products, transactions, users } from "@db/schema";
+import { and, eq, sql } from "drizzle-orm";
+import { createQrisPayment, parsePaymentNotification, verifyPaymentCallback } from "./lib/payment";
 import { expireOldTransactions, fulfillPaidTransaction, syncProcessingTopups } from "./lib/transaction";
 import { rateLimit } from "./lib/rate-limit";
 import { authenticateRequest } from "./lib/session-auth";
@@ -19,6 +21,7 @@ import { findUserByLogin } from "./queries/users";
 import { verifyPassword } from "./lib/password";
 import { signSessionToken } from "./lib/session";
 import { appendSessionCookie } from "./lib/cookies";
+import { publicSafeGameFilter, publicSafeProductFilter } from "./lib/catalog-safety";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -85,6 +88,128 @@ app.post("/api/auth/login", async (c) => {
   } catch (error) {
     console.error("Direct login error:", error);
     return c.json({ error: "Gagal login" }, 500);
+  }
+});
+
+app.post("/api/order/create", async (c) => {
+  try {
+    const body = await c.req.json().catch(() => null);
+    const input = createOrderInput.parse(body);
+    const db = getDb();
+    const referenceId = `TRX-${nanoid(10).toUpperCase()}`;
+    const productResult = await db
+      .select({ product: products, game: games })
+      .from(products)
+      .innerJoin(games, eq(products.gameId, games.id))
+      .where(and(
+        eq(products.id, input.productId),
+        eq(products.isActive, 1),
+        eq(games.isActive, 1),
+        publicSafeGameFilter(),
+        publicSafeProductFilter(),
+      ))
+      .limit(1);
+
+    const product = productResult[0]?.product;
+    const game = productResult[0]?.game;
+    if (!product || !game) {
+      return c.json({ error: "Produk tidak ditemukan" }, 404);
+    }
+    if (game.requiresZoneId === 1 && !input.zoneId?.trim()) {
+      return c.json({ error: "Zone ID / Server wajib diisi untuk game ini" }, 400);
+    }
+
+    await db.insert(transactions).values({
+      referenceId,
+      gameId: product.gameId,
+      productId: input.productId,
+      userIdGame: input.userIdGame.trim(),
+      zoneId: input.zoneId || null,
+      price: product.priceSell,
+      status: "pending",
+      paymentStatus: "unpaid",
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+
+    return c.json({ referenceId, status: "pending", price: product.priceSell });
+  } catch (error) {
+    return handlePublicApiError(c, error, "Gagal membuat order");
+  }
+});
+
+app.post("/api/payment/create-qris", async (c) => {
+  try {
+    const body = await c.req.json().catch(() => null);
+    const input = createPaymentInput.parse(body);
+    const db = getDb();
+
+    const transactionResult = await db
+      .select({
+        transaction: transactions,
+        game: games,
+        product: products,
+      })
+      .from(transactions)
+      .where(eq(transactions.referenceId, input.referenceId))
+      .innerJoin(games, eq(transactions.gameId, games.id))
+      .innerJoin(products, eq(transactions.productId, products.id))
+      .limit(1);
+
+    if (!transactionResult[0]) {
+      return c.json({ error: "Transaksi tidak ditemukan" }, 404);
+    }
+
+    const { transaction: tx, game, product } = transactionResult[0];
+    if (tx.paymentStatus === "paid" || tx.status === "success") {
+      return c.json({ error: "Transaksi sudah dibayar" }, 400);
+    }
+    if (tx.expiresAt && tx.expiresAt.getTime() < Date.now()) {
+      await db
+        .update(transactions)
+        .set({
+          paymentStatus: "expired",
+          status: "failed",
+          lastError: "Payment expired",
+          updatedAt: new Date(),
+        })
+        .where(eq(transactions.referenceId, input.referenceId));
+      return c.json({ error: "Transaksi sudah kadaluarsa. Silakan buat order baru." }, 400);
+    }
+
+    const paymentResult = await createQrisPayment({
+      referenceId: input.referenceId,
+      amount: tx.price,
+      customerName: input.customerName,
+      customerEmail: input.customerEmail.toLowerCase(),
+      customerPhone: normalizePhone(input.customerPhone),
+      items: [
+        {
+          name: `${game.name} - ${product.name}`,
+          price: tx.price,
+          quantity: 1,
+        },
+      ],
+    });
+
+    if (paymentResult.success && paymentResult.data) {
+      await db
+        .update(transactions)
+        .set({
+          customerName: input.customerName,
+          customerEmail: input.customerEmail.toLowerCase(),
+          customerPhone: normalizePhone(input.customerPhone),
+          paymentMethod: "Pembayaran Online",
+          paymentReference: paymentResult.data.reference,
+          paymentStatus: "pending",
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          updatedAt: new Date(),
+        })
+        .where(eq(transactions.referenceId, input.referenceId));
+    }
+
+    return c.json(paymentResult);
+  } catch (error) {
+    return handlePublicApiError(c, error, "Gagal membuat pembayaran");
   }
 });
 
@@ -441,4 +566,37 @@ function parseTopupProviderWebhook(rawBody: string): {
   } catch {
     return null;
   }
+}
+
+const referenceIdInput = z.string().trim().regex(/^TRX-[A-Z0-9_-]{8,32}$/);
+const phoneInput = z
+  .string()
+  .trim()
+  .min(8)
+  .max(20)
+  .regex(/^\+?[0-9][0-9\s-]{6,18}[0-9]$/, "Nomor WhatsApp tidak valid");
+
+const createOrderInput = z.object({
+  productId: z.number().int().positive(),
+  userIdGame: z.string().trim().min(1).max(255),
+  zoneId: z.string().trim().max(100).optional(),
+});
+
+const createPaymentInput = z.object({
+  referenceId: referenceIdInput,
+  customerName: z.string().trim().min(1).max(255),
+  customerEmail: z.string().trim().email(),
+  customerPhone: phoneInput,
+});
+
+function normalizePhone(value: string) {
+  return value.replace(/[\s-]/g, "");
+}
+
+function handlePublicApiError(c: Context, error: unknown, fallback: string) {
+  if (error instanceof z.ZodError) {
+    return c.json({ error: error.issues[0]?.message || "Input tidak valid" }, 400);
+  }
+  console.error(`${fallback}:`, error);
+  return c.json({ error: fallback }, 500);
 }
