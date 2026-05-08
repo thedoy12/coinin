@@ -15,17 +15,23 @@ export function useAdminAction<TInput = void, TResult = unknown>({
   const mutate = async (input?: TInput) => {
     setIsPending(true);
     try {
-      const result = await apiGetWithHeaders<TResult>("/api/admin/action", {
-        "x-coinin-admin-action": action,
-        "x-coinin-admin-input": encodeURIComponent(JSON.stringify(input ?? null)),
-      });
+      const result = await runAdminAction<TInput, TResult>(action, input);
       await onSuccess?.(result);
+      return result;
     } catch (error) {
       onError?.(error instanceof Error ? error : new Error("Aksi admin gagal"));
+      return undefined;
     } finally {
       setIsPending(false);
     }
   };
 
   return { mutate, isPending };
+}
+
+export function runAdminAction<TInput = void, TResult = unknown>(action: string, input?: TInput) {
+  return apiGetWithHeaders<TResult>("/api/admin/action", {
+    "x-coinin-admin-action": action,
+    "x-coinin-admin-input": encodeURIComponent(JSON.stringify(input ?? null)),
+  });
 }

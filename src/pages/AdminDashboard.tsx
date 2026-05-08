@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useSEO } from "@/hooks/useSEO";
-import { useAdminAction } from "@/lib/admin-actions";
+import { runAdminAction, useAdminAction } from "@/lib/admin-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -122,6 +122,7 @@ export default function AdminDashboard() {
   const [popupDraft, setPopupDraft] = useState<typeof emptyPopupForm | null>(null);
   const [productImportFile, setProductImportFile] = useState<File | null>(null);
   const [productImportCount, setProductImportCount] = useState<number | null>(null);
+  const [isImportingProducts, setIsImportingProducts] = useState(false);
   const [transactionSearch, setTransactionSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [apiLogSearch, setApiLogSearch] = useState("");
@@ -284,19 +285,6 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("Produk baru ditambahkan");
       setProductForm(emptyProductForm);
-      refreshAll();
-    },
-    onError: onAdminActionError,
-  });
-
-  const importProducts = useAdminAction<{ rows: ProductImportRow[] }, { created: number; updated: number; skipped: unknown[]; gamesCreated?: number }>({
-    action: "importProducts",
-    onSuccess: (result) => {
-      const skippedText = result.skipped.length ? `, ${result.skipped.length} dilewati` : "";
-      const gamesText = result.gamesCreated ? `, ${result.gamesCreated} game baru` : "";
-      toast.success(`Import selesai: ${result.created} produk baru, ${result.updated} diperbarui${gamesText}${skippedText}`);
-      setProductImportFile(null);
-      setProductImportCount(null);
       refreshAll();
     },
     onError: onAdminActionError,
@@ -482,9 +470,28 @@ export default function AdminDashboard() {
         toast.error("Tidak ada produk valid di file");
         return;
       }
-      importProducts.mutate({ rows });
+      setIsImportingProducts(true);
+      const total: ImportProductsResult = { created: 0, updated: 0, skipped: [], gamesCreated: 0 };
+      const chunks = chunkProductImportRows(rows);
+
+      for (const chunk of chunks) {
+        const result = await runAdminAction<{ rows: ProductImportRow[] }, ImportProductsResult>("importProducts", { rows: chunk });
+        total.created += result.created;
+        total.updated += result.updated;
+        total.skipped.push(...result.skipped);
+        total.gamesCreated += result.gamesCreated ?? 0;
+      }
+
+      const skippedText = total.skipped.length ? `, ${total.skipped.length} dilewati` : "";
+      const gamesText = total.gamesCreated ? `, ${total.gamesCreated} game baru` : "";
+      toast.success(`Import selesai: ${total.created} produk baru, ${total.updated} diperbarui${gamesText}${skippedText}`);
+      setProductImportFile(null);
+      setProductImportCount(null);
+      refreshAll();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "File produk tidak bisa dibaca");
+    } finally {
+      setIsImportingProducts(false);
     }
   };
 
@@ -840,11 +847,11 @@ export default function AdminDashboard() {
               </Field>
               <Button
                 className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-                disabled={importProducts.isPending}
+                disabled={isImportingProducts}
                 onClick={importProductsSubmit}
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {importProducts.isPending ? "Mengimport..." : "Import"}
+                {isImportingProducts ? "Mengimport..." : "Import"}
               </Button>
               <p className="text-xs text-slate-500 lg:col-span-2">
                 {productImportCount === null
@@ -1892,6 +1899,34 @@ type ProductImportRow = {
   requiresZoneId?: boolean;
   productType?: "general" | "membership";
 };
+
+type ImportProductsResult = {
+  created: number;
+  updated: number;
+  skipped: unknown[];
+  gamesCreated: number;
+};
+
+const importHeaderBudget = 6_000;
+
+function chunkProductImportRows(rows: ProductImportRow[]) {
+  const chunks: ProductImportRow[][] = [];
+  let current: ProductImportRow[] = [];
+
+  for (const row of rows) {
+    const next = [...current, row];
+    const encodedLength = encodeURIComponent(JSON.stringify({ rows: next })).length;
+    if (current.length && encodedLength > importHeaderBudget) {
+      chunks.push(current);
+      current = [row];
+    } else {
+      current = next;
+    }
+  }
+
+  if (current.length) chunks.push(current);
+  return chunks;
+}
 
 async function parseProductImportFile(file: File): Promise<ProductImportRow[]> {
   const text = await file.text();
