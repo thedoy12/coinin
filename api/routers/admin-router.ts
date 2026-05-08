@@ -221,11 +221,30 @@ export const adminRouter = createRouter({
 
   providerApiLogs: adminQuery.query(async () => {
     const db = getDb();
-    return db
-      .select()
+    const rows = await db
+      .select({
+        id: providerApiLogs.id,
+        provider: providerApiLogs.provider,
+        referenceId: providerApiLogs.referenceId,
+        method: providerApiLogs.method,
+        endpoint: providerApiLogs.endpoint,
+        requestPayload: providerApiLogs.requestPayload,
+        responsePayload: providerApiLogs.responsePayload,
+        statusCode: providerApiLogs.statusCode,
+        success: providerApiLogs.success,
+        error: providerApiLogs.error,
+        durationMs: providerApiLogs.durationMs,
+        createdAt: providerApiLogs.createdAt,
+      })
       .from(providerApiLogs)
       .orderBy(desc(providerApiLogs.createdAt))
-      .limit(200);
+      .limit(75);
+    return rows.map((row) => ({
+      ...row,
+      requestPayload: truncatePayload(row.requestPayload),
+      responsePayload: truncatePayload(row.responsePayload),
+      error: truncatePayload(row.error),
+    }));
   }),
 
   popupSettings: adminQuery.query(async () => {
@@ -1141,4 +1160,12 @@ function detectGame(row: ImportProductRow): ImportedGameInfo | undefined {
   }
 
   return undefined;
+}
+
+function truncatePayload(value: string | null, maxLength = 8000) {
+  if (!value || value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}\n\n...[truncated ${value.length - maxLength} chars]`;
 }
