@@ -21,7 +21,7 @@ describe("markup", () => {
 
   it("uses a slightly stronger game markup for Point Blank", () => {
     expect(catalogMarkup(9700, "game", "Point Blank")).toBe(10200);
-    expect(catalogMarkup(48500, "game", "Point Blank")).toBe(50000);
-    expect(catalogMarkup(485000, "game", "Point Blank")).toBe(490900);
+    expect(catalogMarkup(48500, "game", "Point Blank")).toBe(49800);
+    expect(catalogMarkup(485000, "game", "Point Blank")).toBe(489900);
   });
 });

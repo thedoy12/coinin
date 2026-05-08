@@ -20,11 +20,11 @@ function markupGame(price: number) {
 }
 
 function markupPointBlank(price: number) {
-  if (price <= 20000) return applyPercentageMarkup(price, 0.04, 500);
-  if (price <= 100000) return applyPercentageMarkup(price, 0.03, 1000);
-  if (price <= 300000) return applyPercentageMarkup(price, 0.02, 0);
-  if (price <= 1000000) return applyPercentageMarkup(price, 0.012, 0, 8000);
-  return applyPercentageMarkup(price, 0.008, 0, 12000);
+  if (price <= 20000) return applyPercentageMarkup(price, 0.035, 500);
+  if (price <= 100000) return applyPercentageMarkup(price, 0.026, 900);
+  if (price <= 300000) return applyPercentageMarkup(price, 0.018, 0);
+  if (price <= 1000000) return applyPercentageMarkup(price, 0.01, 0, 7000);
+  return applyPercentageMarkup(price, 0.007, 0, 11000);
 }
 
 function markupDigital(price: number) {
