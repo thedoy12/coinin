@@ -1,7 +1,7 @@
 import { Link, Outlet } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, ImageUp, User, LogOut, Shield, Search, Radio } from "lucide-react";
+import { Gamepad2, User, LogOut, Shield, Search, Radio } from "lucide-react";
 import { legalLinks } from "@/const/legal-links";
 
 export default function Layout() {
@@ -43,20 +43,12 @@ export default function Layout() {
                 </Button>
               </Link>
               {isAuthenticated && user?.role === "admin" && (
-                <>
-                  <Link to="/admin/thumbnails">
-                    <Button variant="ghost" size="sm" className="rounded-none text-slate-300 hover:text-white hover:bg-cyan-300/10">
-                      <ImageUp className="w-4 h-4 mr-1.5" />
-                      <span className="hidden sm:inline">Images</span>
-                    </Button>
-                  </Link>
-                  <Link to="/admin">
-                    <Button variant="ghost" size="sm" className="rounded-none text-slate-300 hover:text-white hover:bg-cyan-300/10">
-                      <Shield className="w-4 h-4 mr-1.5" />
-                      Admin
-                    </Button>
-                  </Link>
-                </>
+                <Link to="/admin">
+                  <Button variant="ghost" size="sm" className="rounded-none text-slate-300 hover:text-white hover:bg-cyan-300/10">
+                    <Shield className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Admin</span>
+                  </Button>
+                </Link>
               )}
 
               {isAuthenticated ? (

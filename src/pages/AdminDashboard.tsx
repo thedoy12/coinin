@@ -94,6 +94,19 @@ const cleanupTargets: Array<{
   },
 ];
 
+type AdminTab = "overview" | "transactions" | "products" | "games" | "accounts" | "customers" | "popup" | "system";
+
+const adminTabs: Array<{ value: AdminTab; label: string }> = [
+  { value: "overview", label: "Overview" },
+  { value: "transactions", label: "Transaksi" },
+  { value: "products", label: "Produk" },
+  { value: "games", label: "Game" },
+  { value: "accounts", label: "Akun" },
+  { value: "customers", label: "Pembeli" },
+  { value: "popup", label: "Popup" },
+  { value: "system", label: "Sistem" },
+];
+
 export default function AdminDashboard() {
   useSEO({
     title: "Owner Console | CoinIn",
@@ -112,6 +125,7 @@ export default function AdminDashboard() {
   const [transactionSearch, setTransactionSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [apiLogSearch, setApiLogSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [cleanupForm, setCleanupForm] = useState({
     target: "staleTransactions" as CleanupTarget,
     olderThanDays: "30",
@@ -558,19 +572,7 @@ export default function AdminDashboard() {
             <p className="text-sm leading-6 text-slate-500">CoinIn operations, buyer data, game catalog, and transaction control.</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
-          <Button variant="outline" size="sm" onClick={() => expireOld.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
-            <Clock className="w-4 h-4 mr-2" />
-            Expire Lama
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => syncTopups.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Sync Top-up
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => syncCatalog.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Sync Catalog
-          </Button>
+        <div className="flex justify-start lg:justify-end">
           <Button variant="outline" size="sm" onClick={refreshAll} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
@@ -578,40 +580,33 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="gap-6">
-        <div className="-mx-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
-        <TabsList className="inline-flex min-w-max bg-slate-900 border border-slate-800 h-auto justify-start p-1">
-          <TabsTrigger value="overview" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="transactions" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Transaksi
-          </TabsTrigger>
-          <TabsTrigger value="customers" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Pembeli
-          </TabsTrigger>
-          <TabsTrigger value="accounts" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Akun
-          </TabsTrigger>
-          <TabsTrigger value="games" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Game
-          </TabsTrigger>
-          <TabsTrigger value="products" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Produk
-          </TabsTrigger>
-          <TabsTrigger value="popup" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Popup
-          </TabsTrigger>
-          <TabsTrigger value="api-logs" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            API Log
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Audit
-          </TabsTrigger>
-          <TabsTrigger value="maintenance" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
-            Maintenance
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AdminTab)} className="gap-6">
+        <div className="md:hidden">
+          <Select value={activeTab} onValueChange={(value) => setActiveTab(value as AdminTab)}>
+            <SelectTrigger className="w-full border-slate-800 bg-slate-900 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {adminTabs.map((tab) => (
+                <SelectItem key={tab.value} value={tab.value}>
+                  {tab.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="hidden md:block">
+          <TabsList className="flex h-auto flex-wrap justify-start gap-1 bg-slate-900 border border-slate-800 p-1">
+            {adminTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
 
         <TabsContent value="overview" className="space-y-6">
@@ -737,8 +732,14 @@ export default function AdminDashboard() {
 
         <TabsContent value="games" className="space-y-6">
           <Card className="bg-slate-900/50 border-slate-800">
-            <CardHeader>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-white">Tambah Game</CardTitle>
+              <Link to="/admin/thumbnails">
+                <Button size="sm" variant="outline" className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 sm:w-auto">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Thumbnail
+                </Button>
+              </Link>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <Field label="Nama Game"><Input value={gameForm.name} onChange={(e) => setGameForm({ ...gameForm, name: e.target.value })} className="bg-slate-950 border-slate-700 text-white" /></Field>
@@ -1006,7 +1007,31 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="audit">
+        <TabsContent value="system" className="space-y-6">
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white">Operasi Rutin</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <Button variant="outline" onClick={() => expireOld.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
+                <Clock className="w-4 h-4 mr-2" />
+                Expire Lama
+              </Button>
+              <Button variant="outline" onClick={() => syncTopups.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Sync Top-up
+              </Button>
+              <Button variant="outline" onClick={() => syncCatalog.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Sync Catalog
+              </Button>
+              <Button variant="outline" onClick={refreshAll} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="bg-slate-900/50 border-slate-800">
             <CardHeader><CardTitle className="text-white">Audit Log</CardTitle></CardHeader>
             <CardContent className="space-y-2">
@@ -1022,9 +1047,7 @@ export default function AdminDashboard() {
               {!auditLogs.length && <p className="text-center text-slate-500 py-6">Belum ada audit log</p>}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="api-logs">
           <Card className="bg-slate-900/50 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-white flex items-center gap-2">
@@ -1046,9 +1069,7 @@ export default function AdminDashboard() {
               <ProviderApiLogTable rows={filteredApiLogs} />
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="maintenance">
           <Card className="bg-slate-900/50 border-slate-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
