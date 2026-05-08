@@ -494,34 +494,34 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="flex items-center gap-3">
+    <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-start gap-3 sm:items-center">
           <Link to="/">
-            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-slate-800">
+            <Button variant="ghost" size="sm" className="shrink-0 text-slate-400 hover:text-white hover:bg-slate-800">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Kembali
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Owner Console</h1>
-            <p className="text-sm text-slate-500">CoinIn operations, buyer data, game catalog, and transaction control.</p>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-white sm:text-2xl">Owner Console</h1>
+            <p className="text-sm leading-6 text-slate-500">CoinIn operations, buyer data, game catalog, and transaction control.</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => expireOld.mutate()} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
+          <Button variant="outline" size="sm" onClick={() => expireOld.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
             <Clock className="w-4 h-4 mr-2" />
             Expire Lama
           </Button>
-          <Button variant="outline" size="sm" onClick={() => syncTopups.mutate()} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+          <Button variant="outline" size="sm" onClick={() => syncTopups.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
             <RotateCcw className="w-4 h-4 mr-2" />
             Sync Top-up
           </Button>
-          <Button variant="outline" size="sm" onClick={() => syncCatalog.mutate()} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+          <Button variant="outline" size="sm" onClick={() => syncCatalog.mutate()} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
             <RefreshCw className="w-4 h-4 mr-2" />
             Sync Catalog
           </Button>
-          <Button variant="outline" size="sm" onClick={refreshAll} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+          <Button variant="outline" size="sm" onClick={refreshAll} className="justify-center border-slate-700 text-slate-300 hover:bg-slate-800">
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
@@ -529,38 +529,40 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="gap-6">
-        <TabsList className="bg-slate-900 border border-slate-800 overflow-x-auto h-auto justify-start p-1">
-          <TabsTrigger value="overview" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+        <div className="-mx-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
+        <TabsList className="inline-flex min-w-max bg-slate-900 border border-slate-800 h-auto justify-start p-1">
+          <TabsTrigger value="overview" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="transactions" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="transactions" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Transaksi
           </TabsTrigger>
-          <TabsTrigger value="customers" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="customers" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Pembeli
           </TabsTrigger>
-          <TabsTrigger value="accounts" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="accounts" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Akun
           </TabsTrigger>
-          <TabsTrigger value="games" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="games" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Game
           </TabsTrigger>
-          <TabsTrigger value="products" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="products" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Produk
           </TabsTrigger>
-          <TabsTrigger value="popup" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="popup" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Popup
           </TabsTrigger>
-          <TabsTrigger value="api-logs" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="api-logs" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             API Log
           </TabsTrigger>
-          <TabsTrigger value="audit" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="audit" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Audit
           </TabsTrigger>
-          <TabsTrigger value="maintenance" className="text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
+          <TabsTrigger value="maintenance" className="shrink-0 text-slate-200 data-[state=inactive]:text-slate-200 data-[state=inactive]:hover:text-white">
             Maintenance
           </TabsTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -619,7 +621,22 @@ export default function AdminDashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="grid gap-3 md:hidden">
+                {customers.map((customer, index) => (
+                  <div key={`${customer.customerEmail}-${customer.customerPhone}-${index}`} className="rounded-md border border-slate-800 bg-slate-950 p-4">
+                    <p className="font-bold text-white">{customer.customerName || "Pembeli"}</p>
+                    <p className="mt-1 break-all text-sm text-slate-400">{customer.customerEmail || "-"}</p>
+                    <p className="text-sm text-slate-400">{customer.customerPhone || "-"}</p>
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <InfoLine label="Order" value={customer.totalOrders.toString()} />
+                      <InfoLine label="Total Paid" value={rupiah(customer.totalSpent)} tone="money" />
+                      <InfoLine label="Order Terakhir" value={formatDate(customer.lastOrderAt)} wide />
+                    </div>
+                  </div>
+                ))}
+                {!customers.length && <p className="py-6 text-center text-slate-500">Belum ada pembeli</p>}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-slate-800 hover:bg-transparent">
@@ -697,7 +714,30 @@ export default function AdminDashboard() {
           <Card className="bg-slate-900/50 border-slate-800">
             <CardHeader><CardTitle className="text-white">Daftar Game</CardTitle></CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="grid gap-3 md:hidden">
+                {games.map((game) => (
+                  <div key={game.id} className="rounded-md border border-slate-800 bg-slate-950 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-bold text-white">{game.name}</p>
+                        <p className="break-all font-mono text-xs text-slate-500">{game.slug}</p>
+                        <p className="mt-1 text-sm text-slate-400">{game.category || "-"}</p>
+                      </div>
+                      <StatusBadge status={game.isActive ? "success" : "failed"} />
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <Button size="sm" variant="outline" className="border-slate-700 text-slate-300" onClick={() => updateGame.mutate({ gameId: game.id, requiresZoneId: game.requiresZoneId !== 1 })}>
+                        {game.requiresZoneId ? "Zone Wajib" : "Zone Opsional"}
+                      </Button>
+                      <Button size="sm" variant="outline" className={game.isActive ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"} onClick={() => updateGame.mutate({ gameId: game.id, isActive: game.isActive !== 1 })}>
+                        {game.isActive ? "Aktif" : "Nonaktif"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {!games.length && <p className="py-6 text-center text-slate-500">Belum ada game</p>}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-slate-800 hover:bg-transparent">
@@ -1089,7 +1129,43 @@ function TransactionTable({
   showCustomer?: boolean;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="grid gap-3 lg:hidden">
+        {rows.map((tx) => (
+          <div key={tx.referenceId} className="rounded-md border border-slate-800 bg-slate-950 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-all font-mono text-xs text-cyan-200">{tx.referenceId}</p>
+                <p className="mt-1 font-bold text-white">{tx.gameName}</p>
+                <p className="text-sm text-slate-400">{tx.productName}</p>
+              </div>
+              <OperationBadge status={resolveOperationStatus(tx)} />
+            </div>
+            {showCustomer && (
+              <div className="mt-3 rounded-md border border-slate-800 bg-slate-900/60 p-3 text-sm">
+                <p className="text-white">{tx.customerName || "-"}</p>
+                <p className="break-all text-xs text-slate-500">{tx.customerEmail || tx.customerPhone || "-"}</p>
+              </div>
+            )}
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <InfoLine label="Tujuan" value={tx.zoneId ? `${tx.userIdGame} (${tx.zoneId})` : tx.userIdGame} />
+              <InfoLine label="Total" value={rupiah(tx.price)} tone="money" />
+              {showCustomer && <InfoLine label="Profit" value={rupiah(tx.profit ?? 0)} tone="success" />}
+              <InfoLine label="Status" value={<StatusBadge status={tx.status} />} />
+              <InfoLine label="Payment" value={<StatusBadge status={tx.paymentStatus} />} />
+              <InfoLine label="Top-up" value={<StatusBadge status={tx.topupStatus || "-"} />} />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Button size="sm" variant="outline" className="border-blue-500/30 text-blue-300" onClick={() => onSync(tx.referenceId)}>Sync</Button>
+              <Button size="sm" variant="outline" className="border-amber-500/30 text-amber-300" onClick={() => onRetry(tx.referenceId)}>Retry</Button>
+              <Button size="sm" variant="outline" className="border-green-500/30 text-green-300" onClick={() => onStatus(tx.referenceId, "success")}>Success</Button>
+              <Button size="sm" variant="outline" className="border-red-500/30 text-red-300" onClick={() => onStatus(tx.referenceId, "failed")}>Failed</Button>
+            </div>
+          </div>
+        ))}
+        {!rows.length && <p className="py-8 text-center text-slate-500">Belum ada transaksi</p>}
+      </div>
+      <div className="hidden overflow-x-auto lg:block">
       <Table>
         <TableHeader>
           <TableRow className="border-slate-800 hover:bg-transparent">
@@ -1143,6 +1219,7 @@ function TransactionTable({
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
@@ -1189,7 +1266,39 @@ function ProviderApiLogTable({ rows }: { rows: ProviderApiLogRow[] }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="grid gap-3 lg:hidden">
+        {rows.map((log) => (
+          <div key={log.id} className="rounded-md border border-slate-800 bg-slate-950 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white">{log.method} {log.endpoint}</p>
+                <p className="break-all font-mono text-xs text-slate-500">{log.referenceId || "-"}</p>
+                <p className="text-xs text-slate-500">{formatDate(log.createdAt)}</p>
+              </div>
+              <StatusBadge status={log.success ? "success" : "failed"} />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <InfoLine label="Provider" value={log.provider} />
+              <InfoLine label="Durasi" value={`${log.durationMs}ms`} />
+              <InfoLine label="HTTP" value={log.statusCode?.toString() || "-"} />
+            </div>
+            <div className="mt-4">
+              <Button size="sm" variant="outline" className="border-cyan-500/30 text-cyan-300" onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}>
+                {expandedId === log.id ? "Tutup Detail" : "Lihat Detail"}
+              </Button>
+              {expandedId === log.id && (
+                <div className="mt-3 grid gap-3 text-xs">
+                  <PayloadBlock title="Request" value={log.requestPayload} />
+                  <PayloadBlock title={log.success ? "Response" : "Error Response"} value={log.responsePayload || log.error} />
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        {!rows.length && <p className="py-8 text-center text-slate-500">Belum ada log API provider</p>}
+      </div>
+      <div className="hidden overflow-x-auto lg:block">
       <Table>
         <TableHeader>
           <TableRow className="border-slate-800 hover:bg-transparent">
@@ -1237,6 +1346,7 @@ function ProviderApiLogTable({ rows }: { rows: ProviderApiLogRow[] }) {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
@@ -1264,7 +1374,59 @@ function UserTable({
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="grid gap-3 lg:hidden">
+        {rows.map((account) => (
+          <div key={account.id} className="rounded-md border border-slate-800 bg-slate-950 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-bold text-white">{account.name || account.username || `User #${account.id}`}</p>
+                <p className="break-all text-xs text-slate-500">{account.username || "-"}</p>
+                <p className="break-all text-sm text-slate-400">{account.email || "-"}</p>
+              </div>
+              <Badge className="border-slate-700 bg-slate-950 text-slate-300">{account.authProvider}</Badge>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <InfoLine label="Daftar" value={formatDate(account.createdAt)} />
+              <InfoLine label="Login Terakhir" value={formatDate(account.lastSignInAt)} />
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-[160px_1fr]">
+              <Select value={account.role} onValueChange={(value) => onRole(account.id, value as "user" | "admin")}>
+                <SelectTrigger className="h-9 bg-slate-950 border-slate-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+              {editingId === account.id ? (
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Password baru"
+                    className="h-9 bg-slate-950 border-slate-700 text-white"
+                  />
+                  <Button size="sm" className="h-9 bg-cyan-300 font-bold text-slate-950 hover:bg-cyan-200" onClick={() => submitPassword(account.id)}>
+                    Simpan
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-9 text-slate-400" onClick={() => { setEditingId(null); setPassword(""); }}>
+                    Batal
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" className="h-9 border-amber-500/30 text-amber-300" onClick={() => setEditingId(account.id)}>
+                  Reset Password
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+        {!rows.length && <p className="py-8 text-center text-slate-500">Belum ada akun terdaftar</p>}
+      </div>
+      <div className="hidden overflow-x-auto lg:block">
       <Table>
         <TableHeader>
           <TableRow className="border-slate-800 hover:bg-transparent">
@@ -1335,6 +1497,7 @@ function UserTable({
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
@@ -1387,7 +1550,69 @@ function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="grid gap-3 lg:hidden">
+        {rows.map((product) => (
+          <div key={product.id} className="rounded-md border border-slate-800 bg-slate-950 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm text-cyan-200">{product.gameName}</p>
+                <p className="mt-1 font-bold text-white">{product.name}</p>
+              </div>
+              <StatusBadge status={product.isActive ? "success" : "failed"} />
+            </div>
+            {editingId === product.id ? (
+              <div className="mt-4 grid gap-3">
+                <Field label="Provider">
+                  <Input value={draft.providerCode} onChange={(event) => setDraft({ ...draft, providerCode: event.target.value })} className="bg-slate-950 border-slate-700 text-white" />
+                </Field>
+                <Field label="Tipe">
+                  <Select value={draft.productType} onValueChange={(value) => setDraft({ ...draft, productType: value as ProductType })}>
+                    <SelectTrigger className="bg-slate-950 border-slate-700 text-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="membership">Membership</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Modal">
+                    <Input type="number" value={draft.priceModal} onChange={(event) => setDraft({ ...draft, priceModal: event.target.value })} className="bg-slate-950 border-slate-700 text-white" />
+                  </Field>
+                  <Field label="Jual">
+                    <Input type="number" value={draft.priceSell} onChange={(event) => setDraft({ ...draft, priceSell: event.target.value })} className="bg-slate-950 border-slate-700 text-white" />
+                  </Field>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <InfoLine label="Provider" value={product.providerCode} />
+                <InfoLine label="Tipe" value={product.productType} />
+                <InfoLine label="Modal" value={rupiah(product.priceModal)} />
+                <InfoLine label="Jual" value={rupiah(product.priceSell)} tone="money" />
+                <InfoLine label="Margin" value={rupiah(product.priceSell - product.priceModal)} tone="success" />
+              </div>
+            )}
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <Button size="sm" variant="outline" className={product.isActive ? "border-green-500/30 text-green-300" : "border-red-500/30 text-red-300"} onClick={() => onUpdate({ productId: product.id, isActive: product.isActive !== 1 })}>
+                {product.isActive ? "Aktif" : "Nonaktif"}
+              </Button>
+              {editingId === product.id ? (
+                <>
+                  <Button size="sm" variant="outline" className="border-cyan-500/30 text-cyan-300" onClick={() => saveEdit(product)}>Simpan</Button>
+                  <Button size="sm" variant="ghost" className="text-slate-400" onClick={() => setEditingId(null)}>Batal</Button>
+                </>
+              ) : (
+                <Button size="sm" variant="outline" className="border-amber-500/30 text-amber-300" onClick={() => startEdit(product)}>
+                  Edit
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+        {!rows.length && <p className="py-8 text-center text-slate-500">Belum ada produk</p>}
+      </div>
+      <div className="hidden overflow-x-auto lg:block">
       <Table>
         <TableHeader>
           <TableRow className="border-slate-800 hover:bg-transparent">
@@ -1456,6 +1681,7 @@ function ProductTable({ rows, onUpdate }: { rows: ProductRow[]; onUpdate: (input
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
@@ -1465,6 +1691,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1.5">
       <Label className="text-slate-300">{label}</Label>
       {children}
+    </div>
+  );
+}
+
+function InfoLine({
+  label,
+  value,
+  tone,
+  wide = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  tone?: "money" | "success";
+  wide?: boolean;
+}) {
+  const valueClass = tone === "money" ? "text-amber-300" : tone === "success" ? "text-green-300" : "text-slate-200";
+  return (
+    <div className={wide ? "col-span-2" : undefined}>
+      <p className="text-xs font-medium uppercase text-slate-500">{label}</p>
+      <div className={`mt-1 break-words text-sm font-medium ${valueClass}`}>{value}</div>
     </div>
   );
 }
