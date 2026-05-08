@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSEO } from "@/hooks/useSEO";
-import { apiPost } from "@/lib/api-client";
+import { apiGet } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Copy, Check, QrCode, User, Mail, Phone, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -67,7 +67,7 @@ export default function Checkout() {
 
     setIsCreatingPayment(true);
     try {
-      const result = await apiPost<PaymentCreateResponse>("/api/payment/create-qris", {
+      const result = await apiGet<PaymentCreateResponse>("/api/payment/create-qris", {
         referenceId,
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim(),

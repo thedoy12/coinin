@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useSEO } from "@/hooks/useSEO";
-import { apiPost } from "@/lib/api-client";
+import { apiGet } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Gamepad2, User, Hash, ShoppingCart, Sparkles, Coins } from "lucide-react";
 import { toast } from "sonner";
@@ -58,7 +58,7 @@ export default function GameDetail() {
 
     setIsCreatingOrder(true);
     try {
-      const data = await apiPost<{ referenceId: string; status: string; price: number }>("/api/order/create", {
+      const data = await apiGet<{ referenceId: string; status: string; price: number }>("/api/order/create", {
         productId: product.id,
         userIdGame: cleanedUserId,
         zoneId: cleanedZoneId || undefined,

@@ -91,6 +91,19 @@ app.post("/api/auth/login", async (c) => {
   }
 });
 
+app.get("/api/order/create", async (c) => {
+  try {
+    const input = createOrderInput.parse({
+      productId: Number(c.req.query("productId")),
+      userIdGame: c.req.query("userIdGame"),
+      zoneId: c.req.query("zoneId") || undefined,
+    });
+    return c.json(await createOrderApi(input));
+  } catch (error) {
+    return handlePublicApiError(c, error, "Gagal membuat order");
+  }
+});
+
 app.post("/api/order/create", async (c) => {
   try {
     const body = await c.req.json().catch(() => null);
@@ -134,6 +147,20 @@ app.post("/api/order/create", async (c) => {
     return c.json({ referenceId, status: "pending", price: product.priceSell });
   } catch (error) {
     return handlePublicApiError(c, error, "Gagal membuat order");
+  }
+});
+
+app.get("/api/payment/create-qris", async (c) => {
+  try {
+    const input = createPaymentInput.parse({
+      referenceId: c.req.query("referenceId"),
+      customerName: c.req.query("customerName"),
+      customerEmail: c.req.query("customerEmail"),
+      customerPhone: c.req.query("customerPhone"),
+    });
+    return c.json(await createPaymentApi(input));
+  } catch (error) {
+    return handlePublicApiError(c, error, "Gagal membuat pembayaran");
   }
 });
 
@@ -593,10 +620,133 @@ function normalizePhone(value: string) {
   return value.replace(/[\s-]/g, "");
 }
 
+async function createOrderApi(input: z.infer<typeof createOrderInput>) {
+  const db = getDb();
+  const referenceId = `TRX-${nanoid(10).toUpperCase()}`;
+  const productResult = await db
+    .select({ product: products, game: games })
+    .from(products)
+    .innerJoin(games, eq(products.gameId, games.id))
+    .where(and(
+      eq(products.id, input.productId),
+      eq(products.isActive, 1),
+      eq(games.isActive, 1),
+      publicSafeGameFilter(),
+      publicSafeProductFilter(),
+    ))
+    .limit(1);
+
+  const product = productResult[0]?.product;
+  const game = productResult[0]?.game;
+  if (!product || !game) {
+    throw new PublicApiError("Produk tidak ditemukan", 404);
+  }
+  if (game.requiresZoneId === 1 && !input.zoneId?.trim()) {
+    throw new PublicApiError("Zone ID / Server wajib diisi untuk game ini", 400);
+  }
+
+  await db.insert(transactions).values({
+    referenceId,
+    gameId: product.gameId,
+    productId: input.productId,
+    userIdGame: input.userIdGame.trim(),
+    zoneId: input.zoneId || null,
+    price: product.priceSell,
+    status: "pending",
+    paymentStatus: "unpaid",
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+  });
+
+  return { referenceId, status: "pending", price: product.priceSell };
+}
+
+async function createPaymentApi(input: z.infer<typeof createPaymentInput>) {
+  const db = getDb();
+  const transactionResult = await db
+    .select({
+      transaction: transactions,
+      game: games,
+      product: products,
+    })
+    .from(transactions)
+    .where(eq(transactions.referenceId, input.referenceId))
+    .innerJoin(games, eq(transactions.gameId, games.id))
+    .innerJoin(products, eq(transactions.productId, products.id))
+    .limit(1);
+
+  if (!transactionResult[0]) {
+    throw new PublicApiError("Transaksi tidak ditemukan", 404);
+  }
+
+  const { transaction: tx, game, product } = transactionResult[0];
+  if (tx.paymentStatus === "paid" || tx.status === "success") {
+    throw new PublicApiError("Transaksi sudah dibayar", 400);
+  }
+  if (tx.expiresAt && tx.expiresAt.getTime() < Date.now()) {
+    await db
+      .update(transactions)
+      .set({
+        paymentStatus: "expired",
+        status: "failed",
+        lastError: "Payment expired",
+        updatedAt: new Date(),
+      })
+      .where(eq(transactions.referenceId, input.referenceId));
+    throw new PublicApiError("Transaksi sudah kadaluarsa. Silakan buat order baru.", 400);
+  }
+
+  const normalizedPhone = normalizePhone(input.customerPhone);
+  const normalizedEmail = input.customerEmail.toLowerCase();
+  const paymentResult = await createQrisPayment({
+    referenceId: input.referenceId,
+    amount: tx.price,
+    customerName: input.customerName,
+    customerEmail: normalizedEmail,
+    customerPhone: normalizedPhone,
+    items: [
+      {
+        name: `${game.name} - ${product.name}`,
+        price: tx.price,
+        quantity: 1,
+      },
+    ],
+  });
+
+  if (paymentResult.success && paymentResult.data) {
+    await db
+      .update(transactions)
+      .set({
+        customerName: input.customerName,
+        customerEmail: normalizedEmail,
+        customerPhone: normalizedPhone,
+        paymentMethod: "Pembayaran Online",
+        paymentReference: paymentResult.data.reference,
+        paymentStatus: "pending",
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        updatedAt: new Date(),
+      })
+      .where(eq(transactions.referenceId, input.referenceId));
+  }
+
+  return paymentResult;
+}
+
 function handlePublicApiError(c: Context, error: unknown, fallback: string) {
+  if (error instanceof PublicApiError) {
+    return c.json({ error: error.message }, error.status);
+  }
   if (error instanceof z.ZodError) {
     return c.json({ error: error.issues[0]?.message || "Input tidak valid" }, 400);
   }
   console.error(`${fallback}:`, error);
   return c.json({ error: fallback }, 500);
+}
+
+class PublicApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: 400 | 404
+  ) {
+    super(message);
+  }
 }
