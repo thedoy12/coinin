@@ -15,15 +15,15 @@ type GameCardProps = {
 export function GameCard({ game }: GameCardProps) {
   return (
     <Link to={`/game/${game.slug}`} className="group">
-      <Card className="angle-card poster-glow mission-panel overflow-hidden border-cyan-300/20 bg-slate-950 transition-transform group-hover:-translate-y-2">
+      <Card className="cyber-panel game-card-cyber overflow-hidden transition-transform group-hover:-translate-y-2">
         <CardContent className="p-0">
           <div className="relative h-52">
             {game.thumbnail ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/70">
+              <div className="game-card-art absolute inset-0 flex items-center justify-center">
                 <img
                   src={game.thumbnail}
                   alt={game.name}
-                  className="h-full w-full object-contain p-4 opacity-90 transition-transform duration-300 group-hover:scale-105"
+                  className="h-full w-full object-contain p-4 opacity-95 drop-shadow-[0_0_22px_rgba(168,85,247,0.22)] transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
             ) : (
@@ -33,13 +33,13 @@ export function GameCard({ game }: GameCardProps) {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
             {game.category && (
-              <div className="absolute left-4 top-4 border border-cyan-300/30 bg-slate-950/80 px-3 py-1 text-[10px] font-black uppercase text-cyan-100">
+              <div className="absolute left-4 top-4 border border-violet-300/30 bg-slate-950/80 px-3 py-1 text-[10px] font-black uppercase text-violet-100">
                 {game.category}
               </div>
             )}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-200 bg-cyan-200/20 backdrop-blur">
-                <Swords className="h-5 w-5 text-cyan-100" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-violet-200 bg-violet-300/20 shadow-[0_0_28px_rgba(168,85,247,0.34)] backdrop-blur">
+                <Swords className="h-5 w-5 text-violet-100" />
               </div>
             </div>
             <div className="absolute bottom-0 left-0 right-0 p-4">

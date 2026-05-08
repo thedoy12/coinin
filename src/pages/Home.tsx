@@ -288,7 +288,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <section className="cyber-section-shell mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.32em] text-violet-200">Quick Store</p>
@@ -315,9 +315,9 @@ export default function Home() {
         )}
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-200">About</p>
+      <section className="cyber-section-shell mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+        <div className="cyber-panel p-5 sm:p-6">
+          <p className="cyber-eyebrow text-xs font-black uppercase tracking-[0.32em]">About</p>
           <h2 className="section-title-gaming mt-3 text-3xl font-black uppercase italic text-white sm:text-4xl">
             The Magic of Fast Top Up
           </h2>
@@ -332,8 +332,8 @@ export default function Home() {
               { icon: Clock, title: "24 Jam" },
               { icon: Headphones, title: "Support" },
             ].map((item) => (
-              <div key={item.title} className="angle-card border border-cyan-300/20 bg-slate-950/70 p-4">
-                <item.icon className="mb-3 h-5 w-5 text-cyan-200" />
+              <div key={item.title} className="cyber-panel cyber-panel-soft p-4">
+                <item.icon className="mb-3 h-5 w-5 text-violet-200" />
                 <p className="font-black uppercase text-white">{item.title}</p>
               </div>
             ))}
@@ -343,7 +343,7 @@ export default function Home() {
         <div className="grid gap-4 sm:grid-cols-3">
           {featuredGames.map((game, index) => (
             <Link key={game.id} to={`/game/${game.slug}`} className="group">
-              <article className={`angle-card poster-glow min-h-64 overflow-hidden border border-cyan-300/30 bg-slate-950 transition-transform group-hover:-translate-y-2 ${index === 1 ? "sm:mt-8" : ""}`}>
+              <article className={`cyber-panel min-h-64 overflow-hidden transition-transform group-hover:-translate-y-2 ${index === 1 ? "sm:mt-8" : ""}`}>
                 <div className="relative h-64">
                   {game.thumbnail ? (
                     <img src={game.thumbnail} alt={game.name} className="h-full w-full object-cover opacity-85 transition-transform duration-300 group-hover:scale-105" />
@@ -354,7 +354,7 @@ export default function Home() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <span className="bg-cyan-300 px-3 py-1 text-[10px] font-black uppercase text-slate-950">
+                    <span className="bg-gradient-to-r from-cyan-300 to-violet-300 px-3 py-1 text-[10px] font-black uppercase text-slate-950">
                       Top {index + 1}
                     </span>
                     <h3 className="mt-3 text-lg font-black uppercase italic text-white">{game.name}</h3>
@@ -366,11 +366,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="hud-frame overflow-hidden border border-cyan-300/15 bg-slate-950/75 px-4 py-5">
+      <section className="cyber-section-shell mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="cyber-panel overflow-hidden px-4 py-5">
           <div className="mb-3 flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-200">Arena Pulse</p>
+              <p className="cyber-eyebrow text-xs font-black uppercase tracking-[0.3em]">Arena Pulse</p>
               <h2 className="section-title-gaming mt-2 text-2xl font-black uppercase italic text-white sm:text-3xl">
                 Motion Layer For The Storefront
               </h2>
@@ -390,9 +390,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="game-store" className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+      <section id="game-store" className="cyber-section-shell mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
-          <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-200">Games Play</p>
+          <p className="cyber-eyebrow text-xs font-black uppercase tracking-[0.32em]">Games Play</p>
           <h2 className="section-title-gaming mt-3 text-4xl font-black uppercase italic text-white">Choose Your Game</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-400">
             Pilihan populer untuk akses cepat. Katalog lengkap tersedia di halaman Games.
@@ -401,14 +401,14 @@ export default function Home() {
 
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex gap-2 overflow-x-auto pb-2">
-            <button onClick={() => setSearch("")} className="shrink-0 border border-cyan-300 bg-cyan-300 px-4 py-2 text-xs font-black uppercase text-slate-950">
+            <button onClick={() => setSearch("")} className="cyber-filter-button shrink-0 border border-cyan-300 bg-gradient-to-r from-cyan-300 to-violet-300 px-4 py-2 text-xs font-black uppercase text-slate-950">
               All
             </button>
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSearch(category || "")}
-                className="shrink-0 border border-cyan-300/25 bg-slate-950/70 px-4 py-2 text-xs font-black uppercase text-cyan-100 hover:bg-cyan-300/10"
+                className="cyber-filter-button shrink-0 border border-cyan-300/25 bg-slate-950/70 px-4 py-2 text-xs font-black uppercase text-cyan-100 hover:bg-violet-400/10"
               >
                 {category}
               </button>
@@ -420,7 +420,7 @@ export default function Home() {
               placeholder="Search layanan..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="h-12 rounded-none border-cyan-300/25 bg-slate-950/80 pl-10 font-semibold text-white placeholder:text-slate-500 focus-visible:ring-cyan-300/50"
+              className="h-12 rounded-none border-violet-300/25 bg-slate-950/80 pl-10 font-semibold text-white placeholder:text-slate-500 focus-visible:ring-violet-300/50"
             />
           </div>
         </div>
@@ -438,14 +438,14 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="border border-cyan-300/20 bg-slate-950/70 py-16 text-center text-slate-500">
+          <div className="cyber-panel py-16 text-center text-slate-500">
             <Gamepad2 className="mx-auto mb-4 h-12 w-12 opacity-50" />
             <p>Game tidak ditemukan</p>
           </div>
         )}
         <div className="mt-8 text-center">
           <Link to="/games">
-            <Button className="angle-card h-12 rounded-none bg-cyan-300 px-7 font-black uppercase text-slate-950 hover:bg-cyan-200">
+            <Button className="angle-card h-12 rounded-none bg-gradient-to-r from-cyan-300 to-violet-300 px-7 font-black uppercase text-slate-950 hover:from-cyan-200 hover:to-violet-200">
               Lihat Semua Game
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
@@ -453,8 +453,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="hud-frame border border-cyan-300/20 bg-slate-950/80 p-6">
+      <section className="cyber-section-shell mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+        <div className="cyber-panel p-6">
           <h2 className="section-title-gaming text-3xl font-black uppercase italic text-white">Mission Briefing</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
@@ -462,8 +462,8 @@ export default function Home() {
               ["02", "Isi Tujuan", "Masukkan ID pemain, nomor HP, atau ID pelanggan sesuai jenis produk."],
               ["03", "Bayar", "Selesaikan pembayaran dan cek status transaksi secara real-time."],
             ].map(([step, title, text]) => (
-              <article key={step} className="angle-card border border-cyan-300/20 bg-slate-900/70 p-5">
-                <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-200">{step}</p>
+              <article key={step} className="cyber-panel cyber-panel-soft p-5">
+                <p className="cyber-eyebrow text-xs font-black uppercase tracking-[0.28em]">{step}</p>
                 <h3 className="mt-3 text-xl font-black uppercase text-white">{title}</h3>
                 <p className="mt-3 text-sm leading-7 text-slate-400">{text}</p>
               </article>
@@ -472,11 +472,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
+      <section className="cyber-section-shell mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
         <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
           {arenaSignals.map((item) => (
-            <article key={item.title} className="angle-card mission-panel border border-cyan-300/20 bg-slate-950/70 p-5 md:col-span-1 lg:col-span-2">
-              <item.icon className="mb-4 h-7 w-7 text-cyan-200" />
+            <article key={item.title} className="cyber-panel p-5 md:col-span-1 lg:col-span-2">
+              <item.icon className="mb-4 h-7 w-7 text-violet-200" />
               <h2 className="text-lg font-black uppercase text-white">{item.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p>
             </article>
@@ -498,8 +498,8 @@ export default function Home() {
               text: "Data pembeli dan order bisa ditelusuri kalau butuh bantuan.",
             },
           ].map((item) => (
-            <article key={item.title} className="angle-card mission-panel border border-cyan-300/20 bg-slate-950/70 p-5 md:col-span-1 lg:col-span-2">
-              <item.icon className="mb-4 h-7 w-7 text-cyan-200" />
+            <article key={item.title} className="cyber-panel p-5 md:col-span-1 lg:col-span-2">
+              <item.icon className="mb-4 h-7 w-7 text-violet-200" />
               <h2 className="text-lg font-black uppercase text-white">{item.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p>
             </article>
