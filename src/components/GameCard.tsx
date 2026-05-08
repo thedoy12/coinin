@@ -19,11 +19,13 @@ export function GameCard({ game }: GameCardProps) {
         <CardContent className="p-0">
           <div className="relative h-52">
             {game.thumbnail ? (
-              <img
-                src={game.thumbnail}
-                alt={game.name}
-                className="h-full w-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105"
-              />
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/70">
+                <img
+                  src={game.thumbnail}
+                  alt={game.name}
+                  className="h-full w-full object-contain p-4 opacity-90 transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
             ) : (
               <div className="flex h-full items-center justify-center bg-slate-800">
                 <Gamepad2 className="h-16 w-16 text-slate-600" />
