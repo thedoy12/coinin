@@ -11,7 +11,7 @@ import {
   publicSafeGameFilter,
   publicSafeProductFilter,
 } from "../lib/catalog-safety";
-import { markup } from "../lib/markup";
+import { catalogMarkup } from "../lib/markup";
 import {
   expireOldTransactions,
   fulfillPaidTransaction,
@@ -671,7 +671,7 @@ export const adminRouter = createRouter({
         }
 
         const priceModal = normalizeImportPrice(row.hargaRupiah);
-        const priceSell = markup(priceModal, gameInfo.category === "Digital" ? "digital" : "game");
+        const priceSell = catalogMarkup(priceModal, gameInfo.category === "Digital" ? "digital" : "game", gameInfo.name);
         const existingGame = await db
           .select()
           .from(games)

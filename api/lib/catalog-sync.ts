@@ -1,6 +1,6 @@
 import { and, inArray, notInArray, sql } from "drizzle-orm";
 import { games, products, providerApiLogs, transactions } from "../../db/schema";
-import { markup } from "./markup";
+import { catalogMarkup } from "./markup";
 import { getTopupServices } from "./topup";
 import { getDb } from "../queries/connection";
 import { getPublicCatalogThumbnail, isSensitiveCatalogText } from "./catalog-safety";
@@ -348,7 +348,7 @@ function normalizeService(row: ProviderPriceListItem): NormalizedService {
     productName: normalizeProductName(row.product_name, gameName),
     productType: inferProductType(row),
     priceModal,
-    priceSell: markup(priceModal, category === "Digital" ? "digital" : "game"),
+    priceSell: catalogMarkup(priceModal, category === "Digital" ? "digital" : "game", gameName),
     isActive: row.buyer_product_status && row.seller_product_status ? 1 : 0,
     requiresZoneId: requiresZoneId(gameName) ? 1 : 0,
     instructions: buildInstructions(gameName, category, requiresZoneId(gameName)),

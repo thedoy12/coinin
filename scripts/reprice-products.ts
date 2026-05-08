@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { games, products } from "../db/schema";
 import { getDb } from "../api/queries/connection";
-import { markup } from "../api/lib/markup";
+import { catalogMarkup } from "../api/lib/markup";
 
 const db = getDb();
 
@@ -9,6 +9,7 @@ const rows = await db
   .select({
     productId: products.id,
     productName: products.name,
+    gameName: games.name,
     gameCategory: games.category,
     priceModal: products.priceModal,
     priceSell: products.priceSell,
@@ -22,7 +23,7 @@ let raised = 0;
 
 for (const row of rows) {
   const category = row.gameCategory === "Digital" ? "digital" : "game";
-  const nextPriceSell = markup(row.priceModal, category);
+  const nextPriceSell = catalogMarkup(row.priceModal, category, row.gameName);
 
   if (nextPriceSell === row.priceSell) continue;
 
