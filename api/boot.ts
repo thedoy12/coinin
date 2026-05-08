@@ -371,8 +371,9 @@ async function performDirectLogin(c: Context, login: string, password: string) {
   });
   const headers = new Headers();
   appendSessionCookie(headers, c.req.raw.headers, token);
+  const { passwordHash: _passwordHash, ...safeUser } = user;
 
-  return c.json({ success: true, user }, 200, Object.fromEntries(headers.entries()));
+  return c.json({ success: true, user: safeUser }, 200, Object.fromEntries(headers.entries()));
 }
 
 function extensionFromMime(mime: string) {
