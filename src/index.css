@@ -77,10 +77,11 @@
 @layer utilities {
   .gaming-bg {
     background:
-      linear-gradient(135deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.94)),
-      radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.16), transparent 28%),
+      linear-gradient(135deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.93)),
+      radial-gradient(circle at 14% 12%, rgba(168, 85, 247, 0.22), transparent 30%),
+      radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.12), transparent 28%),
       radial-gradient(circle at 82% 18%, rgba(34, 211, 238, 0.12), transparent 30%),
-      radial-gradient(circle at 54% 86%, rgba(244, 63, 94, 0.1), transparent 32%);
+      radial-gradient(circle at 56% 84%, rgba(124, 58, 237, 0.18), transparent 34%);
   }
 
   .neon-grid {
@@ -151,8 +152,10 @@
   .cinematic-stage {
     background:
       linear-gradient(90deg, rgba(2, 6, 23, 0.94), rgba(15, 23, 42, 0.68), rgba(2, 6, 23, 0.94)),
+      radial-gradient(circle at 16% 22%, rgba(168, 85, 247, 0.22), transparent 30%),
+      radial-gradient(circle at 72% 12%, rgba(124, 58, 237, 0.24), transparent 28%),
       radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.26), transparent 28%),
-      radial-gradient(circle at 80% 34%, rgba(248, 113, 113, 0.18), transparent 26%),
+      radial-gradient(circle at 80% 34%, rgba(236, 72, 153, 0.14), transparent 26%),
       linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(2, 6, 23, 0.98)),
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='520' viewBox='0 0 900 520'%3E%3Crect width='900' height='520' fill='%23020813'/%3E%3Cg opacity='.28' stroke='%2338bdf8' stroke-width='1'%3E%3Cpath d='M40 90h810M70 150h760M20 230h860M80 320h740M30 430h830'/%3E%3Cpath d='M110 40v420M250 20v470M420 60v390M610 30v460M780 80v360'/%3E%3C/g%3E%3Cg opacity='.28' fill='%23000'%3E%3Cpath d='M84 430c18-62 55-62 74 0zM180 432c14-88 64-88 80 0zM292 430c17-70 56-70 76 0zM415 432c16-92 70-92 88 0zM550 430c18-76 60-76 80 0zM690 432c15-82 66-82 82 0z'/%3E%3C/g%3E%3C/svg%3E");
     background-size: cover;
@@ -180,15 +183,30 @@
 
   .section-title-gaming {
     text-shadow:
+      0 0 18px rgba(168, 85, 247, 0.32),
       0 0 16px rgba(56, 189, 248, 0.35),
-      0 0 26px rgba(245, 158, 11, 0.2);
+      0 0 26px rgba(236, 72, 153, 0.16);
   }
 
   .poster-glow {
     box-shadow:
       0 0 0 1px rgba(56, 189, 248, 0.3),
-      0 24px 60px rgba(8, 47, 73, 0.45),
+      0 24px 60px rgba(88, 28, 135, 0.28),
+      0 16px 42px rgba(8, 47, 73, 0.32),
       inset 0 0 36px rgba(56, 189, 248, 0.08);
+  }
+
+  .hero-violet-aura {
+    position: absolute;
+    inset: -18% auto auto -12%;
+    width: 36rem;
+    height: 36rem;
+    border-radius: 9999px;
+    background:
+      radial-gradient(circle, rgba(168, 85, 247, 0.34), rgba(124, 58, 237, 0.12) 36%, transparent 68%);
+    filter: blur(18px);
+    opacity: 0.8;
+    pointer-events: none;
   }
 
   .hero-energy-ring {
@@ -200,8 +218,9 @@
     border-radius: 9999px;
     border: 1px solid rgba(56, 189, 248, 0.22);
     box-shadow:
+      0 0 74px rgba(168, 85, 247, 0.18),
       0 0 70px rgba(56, 189, 248, 0.16),
-      inset 0 0 30px rgba(251, 191, 36, 0.08);
+      inset 0 0 30px rgba(168, 85, 247, 0.12);
     animation: hero-ring-drift 8s ease-in-out infinite;
     pointer-events: none;
     opacity: 0.8;
@@ -212,8 +231,8 @@
     inset: auto -12% 10% 28%;
     height: 10rem;
     background:
-      radial-gradient(circle at center, rgba(56, 189, 248, 0.22), transparent 55%),
-      linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), rgba(245, 158, 11, 0.18), transparent);
+      radial-gradient(circle at center, rgba(168, 85, 247, 0.22), transparent 55%),
+      linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.18), rgba(168, 85, 247, 0.2), transparent);
     filter: blur(26px);
     transform: rotate(-6deg);
     animation: beam-sweep 9s ease-in-out infinite;
@@ -264,7 +283,7 @@
     flex-direction: column;
     gap: 0.2rem;
     border: 1px solid rgba(56, 189, 248, 0.22);
-    background: rgba(2, 6, 23, 0.72);
+    background: linear-gradient(135deg, rgba(2, 6, 23, 0.78), rgba(46, 16, 101, 0.26));
     padding: 0.9rem 1rem;
     backdrop-filter: blur(10px);
     clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
@@ -317,7 +336,7 @@
     align-items: center;
     gap: 0.65rem;
     border: 1px solid rgba(56, 189, 248, 0.18);
-    background: rgba(15, 23, 42, 0.75);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(88, 28, 135, 0.24));
     padding: 0.75rem 1rem;
     white-space: nowrap;
     font-size: 0.75rem;
@@ -352,7 +371,9 @@
   .mission-panel:hover {
     transform: translateY(-6px);
     border-color: rgba(165, 243, 252, 0.36);
-    box-shadow: 0 20px 44px rgba(8, 47, 73, 0.24);
+    box-shadow:
+      0 20px 44px rgba(8, 47, 73, 0.2),
+      0 0 32px rgba(168, 85, 247, 0.12);
   }
 
   .mission-panel:hover::before {

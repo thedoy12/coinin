@@ -70,6 +70,7 @@ export default function Home() {
     new Set(games?.map((game) => game.category).filter(Boolean)),
   ).slice(0, 6);
   const featuredGames = filteredGames?.slice(0, 3) ?? [];
+  const quickGames = (games ?? []).slice(0, 6);
   const operatorGames = games?.slice(0, 4) ?? [];
   const liveFeed = [
     "Live feed // QRIS aktif 24 jam",
@@ -155,6 +156,7 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
         <div className="hud-frame cinematic-stage min-h-[620px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
+          <div className="hero-violet-aura" />
           <div className="hero-energy-ring" />
           <div className="hero-energy-beam" />
           <div className="hero-wave-plane hidden lg:block" />
@@ -166,31 +168,54 @@ export default function Home() {
 
             <div className="grid flex-1 items-center gap-8 lg:grid-cols-[1fr_410px]">
               <div className="max-w-3xl">
-                <div className="mb-5 inline-flex items-center gap-2 border border-cyan-300/40 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
-                  <Sparkles className="h-4 w-4 text-cyan-200" />
+                <div className="mb-5 inline-flex items-center gap-2 border border-violet-300/40 bg-violet-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-violet-100 shadow-[0_0_28px_rgba(168,85,247,0.18)]">
+                  <Sparkles className="h-4 w-4 text-violet-200" />
                   Top Up Game, Pulsa, Token PLN
                 </div>
                 <h1 className="section-title-gaming text-5xl font-black uppercase italic leading-[0.92] text-white sm:text-6xl lg:text-8xl">
                   Top Up
-                  <span className="block bg-gradient-to-r from-cyan-200 via-white to-amber-300 bg-clip-text text-transparent">
+                  <span className="block bg-gradient-to-r from-cyan-200 via-white via-45% to-violet-300 bg-clip-text text-transparent">
                     Game Cepat
                   </span>
                 </h1>
-                <p className="mt-6 max-w-xl text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Top up game, pulsa, dan token PLN. Bayar cepat, cek status real-time, semua dalam satu tempat.
+                <p className="mt-6 max-w-2xl text-base font-semibold leading-8 text-slate-200 sm:text-lg">
+                  Pilih game favorit, bayar pakai QRIS/VA/e-wallet, lalu pantau status order secara real-time. Cepat, jelas, dan siap dipakai di device mana pun.
                 </p>
-                <div className="mt-8 flex flex-wrap gap-3">
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <a href="#game-store">
-                    <Button className="hero-cta h-12 rounded-none bg-cyan-300 px-7 font-black uppercase text-slate-950 hover:bg-cyan-200">
-                      Top Up Now
+                    <Button className="hero-cta h-14 w-full rounded-none bg-gradient-to-r from-cyan-300 to-violet-300 px-8 font-black uppercase text-slate-950 shadow-[0_0_34px_rgba(168,85,247,0.28)] hover:from-cyan-200 hover:to-violet-200 sm:w-auto">
+                      Mulai Top Up
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   </a>
                   <Link to="/status">
-                    <Button variant="outline" className="h-12 rounded-none border-cyan-300/40 bg-slate-950/50 px-7 font-black uppercase text-cyan-100 hover:bg-cyan-300/10">
-                      Check Order
+                    <Button variant="outline" className="h-14 w-full rounded-none border-violet-300/40 bg-slate-950/50 px-8 font-black uppercase text-violet-100 hover:bg-violet-400/10 sm:w-auto">
+                      Cek Order
                     </Button>
                   </Link>
+                </div>
+
+                <div className="mt-8 max-w-2xl rounded-none border border-violet-300/25 bg-slate-950/70 p-3 shadow-[0_0_42px_rgba(124,58,237,0.16)] backdrop-blur">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-violet-200/80" />
+                    <Input
+                      placeholder="Cari Mobile Legends, Free Fire, DANA..."
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      className="h-12 rounded-none border-violet-300/25 bg-slate-950/80 pl-10 font-semibold text-white placeholder:text-slate-500 focus-visible:ring-violet-300/50"
+                    />
+                  </div>
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {quickGames.slice(0, 5).map((game) => (
+                      <Link
+                        key={game.id}
+                        to={`/game/${game.slug}`}
+                        className="shrink-0 border border-cyan-300/20 bg-slate-900/80 px-3 py-2 text-xs font-black uppercase text-cyan-100 hover:border-violet-300/50 hover:text-violet-100"
+                      >
+                        {game.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="mt-10 grid max-w-2xl grid-cols-3 gap-3">
@@ -258,7 +283,34 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.32em] text-violet-200">Quick Store</p>
+            <h2 className="section-title-gaming mt-2 text-3xl font-black uppercase italic text-white sm:text-4xl">
+              Game Populer Siap Top Up
+            </h2>
+          </div>
+          <a href="#game-store" className="text-sm font-black uppercase tracking-[0.18em] text-cyan-200 hover:text-violet-200">
+            Lihat katalog
+          </a>
+        </div>
+        {isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Skeleton key={index} className="h-52 bg-slate-800" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {quickGames.map((game) => (
+              <GameCard key={game.id} game={game} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-200">About</p>
           <h2 className="section-title-gaming mt-3 text-3xl font-black uppercase italic text-white sm:text-4xl">
