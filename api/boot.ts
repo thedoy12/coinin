@@ -60,6 +60,7 @@ app.get("/api/health", async (c) => {
       database: "ok",
       appUrl: env.appUrl,
       vercel: process.env.VERCEL === "1",
+      commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
