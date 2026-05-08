@@ -67,60 +67,62 @@ export const adminRouter = createRouter({
   stats: adminQuery.query(async () => {
     const db = getDb();
 
-    const totalTransactions = await db
-      .select({ count: count() })
-      .from(transactions);
-
-    const totalRevenue = await db
-      .select({ total: sql<number>`SUM(${transactions.price})` })
-      .from(transactions)
-      .where(eq(transactions.paymentStatus, "paid"));
-
-    const pendingTransactions = await db
-      .select({ count: count() })
-      .from(transactions)
-      .where(eq(transactions.status, "pending"));
-
-    const paidTransactions = await db
-      .select({ count: count() })
-      .from(transactions)
-      .where(eq(transactions.paymentStatus, "paid"));
-
-    const totalProfit = await db
-      .select({
-        total: sql<number>`COALESCE(SUM(${transactions.price} - ${products.priceModal}), 0)`,
-      })
-      .from(transactions)
-      .innerJoin(products, eq(transactions.productId, products.id))
-      .where(eq(transactions.paymentStatus, "paid"));
-
-    const activeProducts = await db
-      .select({ count: count() })
-      .from(products)
-      .innerJoin(games, eq(products.gameId, games.id))
-      .where(and(
-        eq(products.isActive, 1),
-        eq(games.isActive, 1),
-        publicSafeGameFilter(),
-        publicSafeProductFilter(),
-      ));
-
-    const activeGames = await db
-      .select({ count: count() })
-      .from(games)
-      .where(and(eq(games.isActive, 1), publicSafeGameFilter()));
-
-    const recentTransactions = await db
-      .select({
-        transaction: transactions,
-        game: games,
-        product: products,
-      })
-      .from(transactions)
-      .innerJoin(games, eq(transactions.gameId, games.id))
-      .innerJoin(products, eq(transactions.productId, products.id))
-      .orderBy(desc(transactions.createdAt))
-      .limit(20);
+    const [
+      totalTransactions,
+      totalRevenue,
+      pendingTransactions,
+      paidTransactions,
+      totalProfit,
+      activeProducts,
+      activeGames,
+      recentTransactions,
+    ] = await Promise.all([
+      db.select({ count: count() }).from(transactions),
+      db
+        .select({ total: sql<number>`SUM(${transactions.price})` })
+        .from(transactions)
+        .where(eq(transactions.paymentStatus, "paid")),
+      db
+        .select({ count: count() })
+        .from(transactions)
+        .where(eq(transactions.status, "pending")),
+      db
+        .select({ count: count() })
+        .from(transactions)
+        .where(eq(transactions.paymentStatus, "paid")),
+      db
+        .select({
+          total: sql<number>`COALESCE(SUM(${transactions.price} - ${products.priceModal}), 0)`,
+        })
+        .from(transactions)
+        .innerJoin(products, eq(transactions.productId, products.id))
+        .where(eq(transactions.paymentStatus, "paid")),
+      db
+        .select({ count: count() })
+        .from(products)
+        .innerJoin(games, eq(products.gameId, games.id))
+        .where(and(
+          eq(products.isActive, 1),
+          eq(games.isActive, 1),
+          publicSafeGameFilter(),
+          publicSafeProductFilter(),
+        )),
+      db
+        .select({ count: count() })
+        .from(games)
+        .where(and(eq(games.isActive, 1), publicSafeGameFilter())),
+      db
+        .select({
+          transaction: transactions,
+          game: games,
+          product: products,
+        })
+        .from(transactions)
+        .innerJoin(games, eq(transactions.gameId, games.id))
+        .innerJoin(products, eq(transactions.productId, products.id))
+        .orderBy(desc(transactions.createdAt))
+        .limit(20),
+    ]);
 
     return {
       totalTransactions: totalTransactions[0]?.count ?? 0,
@@ -186,7 +188,7 @@ export const adminRouter = createRouter({
       })
       .from(users)
       .orderBy(desc(users.createdAt))
-      .limit(500);
+      .limit(100);
   }),
 
   customers: adminQuery.query(async () => {
@@ -262,7 +264,8 @@ export const adminRouter = createRouter({
       .from(transactions)
       .innerJoin(games, eq(transactions.gameId, games.id))
       .innerJoin(products, eq(transactions.productId, products.id))
-      .orderBy(desc(transactions.createdAt));
+      .orderBy(desc(transactions.createdAt))
+      .limit(100);
 
     return rows.map((row) => ({
       ...row.transaction,
