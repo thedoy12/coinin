@@ -59,6 +59,37 @@ export async function apiGet<T>(url: string, params: Record<string, string | num
   return payload as T;
 }
 
+export async function apiGetWithHeaders<T>(url: string, headers: Record<string, string | number | undefined>): Promise<T> {
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+    headers: Object.fromEntries(
+      Object.entries(headers)
+        .filter((entry): entry is [string, string | number] => entry[1] !== undefined)
+        .map(([key, value]) => [key, String(value)])
+    ),
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const payload = contentType.toLowerCase().includes("application/json")
+    ? await response.json().catch(() => null)
+    : null;
+
+  if (!response.ok) {
+    const message =
+      getPayloadMessage(payload) ||
+      `Server API mengembalikan error ${response.status}.`;
+    throw new Error(message);
+  }
+
+  if (!payload) {
+    throw new Error("Server API mengembalikan respons tidak valid.");
+  }
+
+  return payload as T;
+}
+
 function getPayloadMessage(payload: unknown) {
   if (!payload || typeof payload !== "object") return "";
   const record = payload as Record<string, unknown>;

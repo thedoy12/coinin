@@ -94,9 +94,9 @@ app.post("/api/auth/login", async (c) => {
 app.get("/api/order/create", async (c) => {
   try {
     const input = createOrderInput.parse({
-      productId: Number(c.req.query("productId")),
-      userIdGame: c.req.query("userIdGame"),
-      zoneId: c.req.query("zoneId") || undefined,
+      productId: Number(c.req.header("x-coinin-product-id") || c.req.query("productId")),
+      userIdGame: c.req.header("x-coinin-user-id-game") || c.req.query("userIdGame"),
+      zoneId: c.req.header("x-coinin-zone-id") || c.req.query("zoneId") || undefined,
     });
     return c.json(await createOrderApi(input));
   } catch (error) {
@@ -153,10 +153,10 @@ app.post("/api/order/create", async (c) => {
 app.get("/api/payment/create-qris", async (c) => {
   try {
     const input = createPaymentInput.parse({
-      referenceId: c.req.query("referenceId"),
-      customerName: c.req.query("customerName"),
-      customerEmail: c.req.query("customerEmail"),
-      customerPhone: c.req.query("customerPhone"),
+      referenceId: c.req.header("x-coinin-reference-id") || c.req.query("referenceId"),
+      customerName: c.req.header("x-coinin-customer-name") || c.req.query("customerName"),
+      customerEmail: c.req.header("x-coinin-customer-email") || c.req.query("customerEmail"),
+      customerPhone: c.req.header("x-coinin-customer-phone") || c.req.query("customerPhone"),
     });
     return c.json(await createPaymentApi(input));
   } catch (error) {
@@ -254,10 +254,10 @@ app.get("/api/auth/login", async (c) => {
 app.get("/api/auth/register", async (c) => {
   try {
     const input = authRegisterInput.parse({
-      username: c.req.query("username"),
-      name: c.req.query("name"),
-      email: c.req.query("email"),
-      password: c.req.query("password"),
+      username: c.req.header("x-coinin-username") || c.req.query("username"),
+      name: c.req.header("x-coinin-name") || c.req.query("name"),
+      email: c.req.header("x-coinin-email") || c.req.query("email"),
+      password: c.req.header("x-coinin-password") || c.req.query("password"),
     });
     return performDirectRegister(c, input);
   } catch (error) {

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useSEO } from "@/hooks/useSEO";
-import { apiGet } from "@/lib/api-client";
+import { apiGetWithHeaders } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Gamepad2, User, Hash, ShoppingCart, Sparkles, Coins } from "lucide-react";
 import { toast } from "sonner";
@@ -58,10 +58,10 @@ export default function GameDetail() {
 
     setIsCreatingOrder(true);
     try {
-      const data = await apiGet<{ referenceId: string; status: string; price: number }>("/api/order/create", {
-        productId: product.id,
-        userIdGame: cleanedUserId,
-        zoneId: cleanedZoneId || undefined,
+      const data = await apiGetWithHeaders<{ referenceId: string; status: string; price: number }>("/api/order/create", {
+        "x-coinin-product-id": product.id,
+        "x-coinin-user-id-game": cleanedUserId,
+        "x-coinin-zone-id": cleanedZoneId || undefined,
       });
       toast.success("Order berhasil dibuat!");
       navigate(`/checkout/${data.referenceId}`);

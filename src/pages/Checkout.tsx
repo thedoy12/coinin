@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSEO } from "@/hooks/useSEO";
-import { apiGet } from "@/lib/api-client";
+import { apiGetWithHeaders } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
 import { ArrowLeft, Copy, Check, QrCode, User, Mail, Phone, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -67,11 +67,11 @@ export default function Checkout() {
 
     setIsCreatingPayment(true);
     try {
-      const result = await apiGet<PaymentCreateResponse>("/api/payment/create-qris", {
-        referenceId,
-        customerName: customerName.trim(),
-        customerEmail: customerEmail.trim(),
-        customerPhone: customerPhone.trim(),
+      const result = await apiGetWithHeaders<PaymentCreateResponse>("/api/payment/create-qris", {
+        "x-coinin-reference-id": referenceId,
+        "x-coinin-customer-name": customerName.trim(),
+        "x-coinin-customer-email": customerEmail.trim(),
+        "x-coinin-customer-phone": customerPhone.trim(),
       });
       if (result.success && result.data?.checkout_url) {
         toast.success("Halaman pembayaran berhasil dibuat!");

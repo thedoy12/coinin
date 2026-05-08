@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/providers/trpc";
 import { useSEO } from "@/hooks/useSEO";
-import { apiGet } from "@/lib/api-client";
+import { apiGetWithHeaders } from "@/lib/api-client";
 import { ArrowLeft, Gamepad2, Lock, Mail, User, Coins, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,11 +35,11 @@ export default function Login() {
   const registerDirectly = async () => {
     setRegisterPending(true);
     try {
-      await apiGet<{ success?: boolean }>("/api/auth/register", {
-        username: form.username,
-        name: form.name,
-        email: form.email,
-        password: form.password,
+      await apiGetWithHeaders<{ success?: boolean }>("/api/auth/register", {
+        "x-coinin-username": form.username,
+        "x-coinin-name": form.name,
+        "x-coinin-email": form.email,
+        "x-coinin-password": form.password,
       });
       await utils.auth.me.invalidate();
       toast.success("Akun berhasil dibuat");
