@@ -588,6 +588,20 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AdminTab)} className="gap-6">
+        <div className="grid grid-cols-3 gap-2 md:hidden">
+          {(["overview", "transactions", "games"] as AdminTab[]).map((tab) => (
+            <Button
+              key={tab}
+              type="button"
+              variant={activeTab === tab ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab(tab)}
+              className={activeTab === tab ? "justify-center bg-cyan-300 text-slate-950 hover:bg-cyan-200" : "justify-center border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800"}
+            >
+              {adminTabs.find((item) => item.value === tab)?.label}
+            </Button>
+          ))}
+        </div>
         <div className="md:hidden">
           <Select value={activeTab} onValueChange={(value) => setActiveTab(value as AdminTab)}>
             <SelectTrigger className="w-full border-slate-800 bg-slate-900 text-white">

@@ -29,30 +29,30 @@ export default function Layout() {
               </div>
             </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link to="/games">
-                <Button variant="ghost" size="sm" className="rounded-none text-slate-300 hover:bg-cyan-300/10 hover:text-cyan-100">
+                <Button variant="ghost" size="sm" className="rounded-none px-2 text-slate-300 hover:bg-cyan-300/10 hover:text-cyan-100 sm:px-3">
                   <Gamepad2 className="w-4 h-4 mr-1.5" />
-                  <span className="hidden sm:inline">Games</span>
+                  <span>Games</span>
                 </Button>
               </Link>
               <Link to="/status">
-                <Button variant="ghost" size="sm" className="rounded-none text-slate-300 hover:bg-cyan-300/10 hover:text-cyan-100">
-                  <Search className="w-4 h-4 mr-1.5" />
+                <Button variant="ghost" size="sm" className="rounded-none px-2 text-slate-300 hover:bg-cyan-300/10 hover:text-cyan-100 sm:px-3">
+                  <Search className="w-4 h-4 sm:mr-1.5" />
                   <span className="hidden sm:inline">Status</span>
                 </Button>
               </Link>
               {isAuthenticated && user?.role === "admin" && (
                 <Link to="/admin">
-                  <Button variant="ghost" size="sm" className="rounded-none text-slate-300 hover:text-white hover:bg-cyan-300/10">
-                    <Shield className="w-4 h-4 mr-1.5" />
+                  <Button variant="ghost" size="sm" className="rounded-none px-2 text-slate-300 hover:text-white hover:bg-cyan-300/10 sm:px-3">
+                    <Shield className="w-4 h-4 sm:mr-1.5" />
                     <span className="hidden sm:inline">Admin</span>
                   </Button>
                 </Link>
               )}
 
               {isAuthenticated ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div className="flex items-center gap-2 text-sm text-slate-300">
                     <User className="w-4 h-4" />
                     <span className="hidden sm:inline">{user?.name || "User"}</span>
