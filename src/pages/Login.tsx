@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/providers/trpc";
 import { useSEO } from "@/hooks/useSEO";
+import { apiGet } from "@/lib/api-client";
 import { ArrowLeft, Gamepad2, Lock, Mail, User, Coins, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export default function Login() {
   const utils = trpc.useUtils();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loginPending, setLoginPending] = useState(false);
+  const [registerPending, setRegisterPending] = useState(false);
   const [form, setForm] = useState({
     username: "",
     name: "",
@@ -30,14 +32,24 @@ export default function Login() {
     password: "",
   });
 
-  const register = trpc.auth.register.useMutation({
-    onSuccess: async () => {
+  const registerDirectly = async () => {
+    setRegisterPending(true);
+    try {
+      await apiGet<{ success?: boolean }>("/api/auth/register", {
+        username: form.username,
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
       await utils.auth.me.invalidate();
       toast.success("Akun berhasil dibuat");
       navigate("/");
-    },
-    onError: (error) => toast.error(error.message),
-  });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal membuat akun");
+    } finally {
+      setRegisterPending(false);
+    }
+  };
 
   const loginDirectly = async () => {
     setLoginPending(true);
@@ -70,12 +82,7 @@ export default function Login() {
       return;
     }
 
-    register.mutate({
-      username: form.username,
-      name: form.name,
-      email: form.email,
-      password: form.password,
-    });
+    void registerDirectly();
   };
 
   return (
@@ -171,9 +178,9 @@ export default function Login() {
             <Button
               className="angle-card w-full rounded-none bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black h-11 shadow-lg shadow-cyan-500/20"
               onClick={submit}
-              disabled={loginPending || register.isPending}
+              disabled={loginPending || registerPending}
             >
-              {loginPending || register.isPending
+              {loginPending || registerPending
                 ? "Memproses..."
                 : mode === "login"
                 ? "Masuk"

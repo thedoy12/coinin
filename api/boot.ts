@@ -18,9 +18,9 @@ import { expireOldTransactions, fulfillPaidTransaction, syncProcessingTopups } f
 import { rateLimit } from "./lib/rate-limit";
 import { authenticateRequest } from "./lib/session-auth";
 import { findUserByLogin } from "./queries/users";
-import { verifyPassword } from "./lib/password";
+import { hashPassword, verifyPassword } from "./lib/password";
 import { signSessionToken } from "./lib/session";
-import { appendSessionCookie } from "./lib/cookies";
+import { appendClearSessionCookie, appendSessionCookie } from "./lib/cookies";
 import { publicSafeGameFilter, publicSafeProductFilter } from "./lib/catalog-safety";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
@@ -249,6 +249,26 @@ app.get("/api/auth/login", async (c) => {
     console.error("Direct login header error:", error);
     return c.json({ error: "Gagal login" }, 500);
   }
+});
+
+app.get("/api/auth/register", async (c) => {
+  try {
+    const input = authRegisterInput.parse({
+      username: c.req.query("username"),
+      name: c.req.query("name"),
+      email: c.req.query("email"),
+      password: c.req.query("password"),
+    });
+    return performDirectRegister(c, input);
+  } catch (error) {
+    return handlePublicApiError(c, error, "Gagal membuat akun");
+  }
+});
+
+app.get("/api/auth/logout", (c) => {
+  const headers = new Headers();
+  appendClearSessionCookie(headers, c.req.raw.headers);
+  return c.json({ success: true }, 200, Object.fromEntries(headers.entries()));
 });
 
 // Payment callback endpoint (HTTP, not tRPC)
@@ -531,9 +551,59 @@ async function performDirectLogin(c: Context, login: string, password: string) {
   });
   const headers = new Headers();
   appendSessionCookie(headers, c.req.raw.headers, token);
-  const { passwordHash: _passwordHash, ...safeUser } = user;
+  return c.json({ success: true, user: toSafeUser(user) }, 200, Object.fromEntries(headers.entries()));
+}
 
-  return c.json({ success: true, user: safeUser }, 200, Object.fromEntries(headers.entries()));
+async function performDirectRegister(c: Context, input: z.infer<typeof authRegisterInput>) {
+  const username = input.username.trim().toLowerCase();
+  const email = input.email.trim().toLowerCase();
+  const existing = await findUserByLogin(username) || await findUserByLogin(email);
+  if (existing) {
+    return c.json({ error: "Username atau email sudah digunakan" }, 409);
+  }
+
+  const inserted = await getDb()
+    .insert(users)
+    .values({
+      unionId: `local:${username}`,
+      username,
+      name: input.name.trim(),
+      email,
+      passwordHash: hashPassword(input.password),
+      authProvider: "local",
+      role: username === env.ownerUnionId || email === env.ownerUnionId ? "admin" : "user",
+      lastSignInAt: new Date(),
+    })
+    .returning();
+
+  const user = inserted[0];
+  const token = await signSessionToken({
+    unionId: user.unionId,
+    clientId: "local",
+  });
+  const headers = new Headers();
+  appendSessionCookie(headers, c.req.raw.headers, token);
+
+  return c.json({
+    success: true,
+    user: toSafeUser(user),
+  }, 200, Object.fromEntries(headers.entries()));
+}
+
+function toSafeUser(user: typeof users.$inferSelect) {
+  return {
+    id: user.id,
+    unionId: user.unionId,
+    username: user.username,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    authProvider: user.authProvider,
+    role: user.role,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    lastSignInAt: user.lastSignInAt,
+  };
 }
 
 function extensionFromMime(mime: string) {
@@ -614,6 +684,13 @@ const createPaymentInput = z.object({
   customerName: z.string().trim().min(1).max(255),
   customerEmail: z.string().trim().email(),
   customerPhone: phoneInput,
+});
+
+const authRegisterInput = z.object({
+  username: z.string().trim().min(3).max(100),
+  name: z.string().trim().min(1).max(255),
+  email: z.string().trim().email(),
+  password: z.string().min(8).max(100),
 });
 
 function normalizePhone(value: string) {
