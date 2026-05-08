@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSEO } from "@/hooks/useSEO";
 import { getTargetCopy } from "@/lib/target-copy";
-import { ArrowLeft, Search, Copy, Check, RefreshCw, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { buildInvoiceMessage, buildWhatsAppUrl } from "@/lib/whatsapp-invoice";
+import { ArrowLeft, Search, Copy, Check, RefreshCw, Clock, CheckCircle2, XCircle, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Status() {
@@ -30,6 +31,24 @@ export default function Status() {
     { referenceId: activeRef },
     { enabled: !!activeRef, refetchInterval: activeRef ? 5000 : false }
   );
+  const invoiceUrl = transaction
+    ? buildWhatsAppUrl(
+        transaction.customerPhone,
+        buildInvoiceMessage({
+          referenceId: transaction.referenceId,
+          gameName: transaction.gameName,
+          productName: transaction.productName,
+          userIdGame: transaction.userIdGame,
+          zoneId: transaction.zoneId,
+          price: transaction.price,
+          status: transaction.status,
+          paymentStatus: transaction.paymentStatus,
+          customerName: transaction.customerName,
+          checkoutUrl: `${window.location.origin}/checkout/${transaction.referenceId}`,
+          statusUrl: `${window.location.origin}/status/${transaction.referenceId}`,
+        }),
+      )
+    : "";
   const targetCopy = transaction ? getTargetCopy(transaction.gameName, transaction.category) : null;
 
   const handleSearch = () => {
@@ -194,6 +213,13 @@ export default function Status() {
                 <p>Dibuat: {new Date(transaction.createdAt).toLocaleString("id-ID")}</p>
                 <p>Diperbarui: {new Date(transaction.updatedAt).toLocaleString("id-ID")}</p>
               </div>
+
+              <a href={invoiceUrl} target="_blank" rel="noreferrer">
+                <Button variant="outline" className="w-full rounded-none border-green-500/30 bg-green-500/10 text-green-200 hover:bg-green-500/20">
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Kirim Invoice ke WhatsApp
+                </Button>
+              </a>
             </CardContent>
           </Card>
 
