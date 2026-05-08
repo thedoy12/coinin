@@ -145,9 +145,10 @@ export async function syncPaymentAndFulfill(referenceId: string) {
   const status = extractPaymentStatus(payment.data);
   if (status === "PAID") {
     const result = await fulfillPaidTransaction(referenceId);
-    return result.success
-      ? { success: true, data: payment.data }
-      : { success: false, error: result.error };
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+    return { success: true, data: payment.data };
   }
 
   if (status === "EXPIRED" || status === "FAILED") {
