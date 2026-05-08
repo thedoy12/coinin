@@ -156,16 +156,16 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-        <div className="hud-frame cinematic-stage cyber-hero-shell min-h-[620px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
+        <div className="hud-frame cinematic-stage cyber-hero-shell min-h-[560px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
           <div className="hero-violet-aura" />
-          <div className="hero-energy-ring" />
-          <div className="hero-energy-beam" />
-          <div className="hero-wave-plane hidden lg:block" />
-          <div className="cyber-scanlines" />
-          <div className="cyber-slice cyber-slice-one" />
-          <div className="cyber-slice cyber-slice-two" />
-          <div className="cyber-slice cyber-slice-three" />
-          <div className="relative z-10 flex min-h-[560px] flex-col">
+          <div className="hero-energy-ring hidden lg:block" />
+          <div className="hero-energy-beam hidden lg:block" />
+          <div className="hero-wave-plane hidden xl:block" />
+          <div className="cyber-scanlines hidden lg:block" />
+          <div className="cyber-slice cyber-slice-one hidden xl:block" />
+          <div className="cyber-slice cyber-slice-two hidden xl:block" />
+          <div className="cyber-slice cyber-slice-three hidden xl:block" />
+          <div className="relative z-10 flex min-h-[500px] flex-col">
             <div className="flex items-center justify-between text-xs font-black uppercase tracking-[0.28em] text-cyan-100/80">
               <span>CoinIn Arcade</span>
               <span className="hidden sm:inline">QRIS // VA // E-Wallet // 24H</span>

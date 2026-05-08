@@ -143,15 +143,15 @@ export default function AdminDashboard() {
 
   const enabled = !!user && user.role === "admin";
   const statsQuery = trpc.admin.stats.useQuery(undefined, { enabled });
-  const transactionsQuery = trpc.admin.allTransactions.useQuery(undefined, { enabled });
-  const customersQuery = trpc.admin.customers.useQuery(undefined, { enabled });
-  const usersQuery = trpc.admin.users.useQuery(undefined, { enabled });
-  const catalogQuery = trpc.admin.catalog.useQuery(undefined, { enabled });
-  const gamesQuery = trpc.admin.games.useQuery(undefined, { enabled });
-  const auditQuery = trpc.admin.auditLogs.useQuery(undefined, { enabled });
-  const providerApiLogsQuery = trpc.admin.providerApiLogs.useQuery(undefined, { enabled });
+  const transactionsQuery = trpc.admin.allTransactions.useQuery(undefined, { enabled: enabled && ["overview", "transactions"].includes(activeTab) });
+  const customersQuery = trpc.admin.customers.useQuery(undefined, { enabled: enabled && ["overview", "customers"].includes(activeTab) });
+  const usersQuery = trpc.admin.users.useQuery(undefined, { enabled: enabled && ["overview", "accounts"].includes(activeTab) });
+  const catalogQuery = trpc.admin.catalog.useQuery(undefined, { enabled: enabled && activeTab === "products" });
+  const gamesQuery = trpc.admin.games.useQuery(undefined, { enabled: enabled && ["games", "products"].includes(activeTab) });
+  const auditQuery = trpc.admin.auditLogs.useQuery(undefined, { enabled: enabled && activeTab === "system" });
+  const providerApiLogsQuery = trpc.admin.providerApiLogs.useQuery(undefined, { enabled: enabled && activeTab === "system" });
   const popupSettingsQuery = trpc.admin.popupSettings.useQuery(undefined, {
-    enabled,
+    enabled: enabled && activeTab === "popup",
     refetchOnWindowFocus: false,
   });
 
