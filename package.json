@@ -17,6 +17,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx db/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "reprice:markup": "tsx scripts/reprice-products.ts",
     "sync:provider": "tsx scripts/sync-provider-products.ts",
     "cleanup:second-games": "tsx scripts/cleanup-second-games.ts"
   },
