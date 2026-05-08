@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
 import { publicSafeGameFilter, publicSafeProductFilter } from "../lib/catalog-safety";
+import { syncPaymentAndFulfill, syncProcessingTopups } from "../lib/transaction";
 
 const referenceIdInput = z.string().trim().regex(/^TRX-[A-Z0-9_-]{8,32}$/);
 
@@ -68,7 +69,7 @@ export const orderRouter = createRouter({
     .input(z.object({ referenceId: referenceIdInput }))
     .query(async ({ input }) => {
       const db = getDb();
-      const result = await db
+      let result = await db
         .select({
           transaction: transactions,
           game: games,
@@ -79,6 +80,21 @@ export const orderRouter = createRouter({
         .innerJoin(games, eq(transactions.gameId, games.id))
         .innerJoin(products, eq(transactions.productId, products.id))
         .limit(1);
+
+      if (!result[0]) return null;
+      const current = result[0].transaction;
+
+      if (current.paymentStatus === "pending" && current.paymentReference) {
+        await syncPaymentAndFulfill(input.referenceId).catch((error) => {
+          console.error(`Payment sync failed for ${input.referenceId}:`, error);
+        });
+        result = await loadTransactionWithCatalog(input.referenceId);
+      } else if (current.paymentStatus === "paid" && current.topupStatus === "processing") {
+        await syncProcessingTopups(10).catch((error) => {
+          console.error(`Top-up sync failed for ${input.referenceId}:`, error);
+        });
+        result = await loadTransactionWithCatalog(input.referenceId);
+      }
 
       if (!result[0]) return null;
 
@@ -92,3 +108,17 @@ export const orderRouter = createRouter({
       };
     }),
 });
+
+function loadTransactionWithCatalog(referenceId: string) {
+  return getDb()
+    .select({
+      transaction: transactions,
+      game: games,
+      product: products,
+    })
+    .from(transactions)
+    .where(eq(transactions.referenceId, referenceId))
+    .innerJoin(games, eq(transactions.gameId, games.id))
+    .innerJoin(products, eq(transactions.productId, products.id))
+    .limit(1);
+}

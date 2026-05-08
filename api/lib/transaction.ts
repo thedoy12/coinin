@@ -275,7 +275,7 @@ function extractTopupReference(data: unknown) {
 
 function extractPaymentStatus(data: unknown) {
   if (typeof data !== "object" || data === null) return "";
-  const root = data as { status?: unknown; transaction_status?: unknown; fraud_status?: unknown };
+  const root = data as { status?: unknown; transaction_status?: unknown; fraud_status?: unknown; message?: unknown };
   if (typeof root.transaction_status === "string") {
     const status = root.transaction_status.toLowerCase();
     const fraudStatus = typeof root.fraud_status === "string"
@@ -288,7 +288,15 @@ function extractPaymentStatus(data: unknown) {
     if (status === "expire") return "EXPIRED";
     return "FAILED";
   }
-  return typeof root.status === "string" ? root.status.toUpperCase() : "";
+  if (typeof root.status === "string") return root.status.toUpperCase();
+  if (typeof root.message === "string") {
+    const message = root.message.toUpperCase();
+    if (message.includes("PAID")) return "PAID";
+    if (message.includes("EXPIRED")) return "EXPIRED";
+    if (message.includes("FAILED") || message.includes("GAGAL")) return "FAILED";
+    if (message.includes("PENDING") || message.includes("UNPAID")) return "PENDING";
+  }
+  return "";
 }
 
 function extractTopupStatus(data: unknown) {
