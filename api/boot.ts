@@ -10,7 +10,7 @@ import { createContext } from "./context";
 import { env } from "./lib/env";
 import { getDb } from "./queries/connection";
 import { games, transactions } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { parsePaymentNotification, verifyPaymentCallback } from "./lib/payment";
 import { expireOldTransactions, fulfillPaidTransaction, syncProcessingTopups } from "./lib/transaction";
 import { rateLimit } from "./lib/rate-limit";
@@ -50,6 +50,21 @@ app.get("/sitemap.xml", async (c) => {
 ${urls.map((url) => `  <url><loc>${url.loc}</loc><priority>${url.priority}</priority></url>`).join("\n")}
 </urlset>`;
   return c.text(xml, 200, { "Content-Type": "application/xml; charset=utf-8" });
+});
+
+app.get("/api/health", async (c) => {
+  try {
+    await getDb().execute(sql`select 1`);
+    return c.json({
+      ok: true,
+      database: "ok",
+      appUrl: env.appUrl,
+      vercel: process.env.VERCEL === "1",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return c.json({ ok: false, database: "error", message }, 500);
+  }
 });
 
 // Payment callback endpoint (HTTP, not tRPC)
