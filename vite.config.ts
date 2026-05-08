@@ -27,5 +27,29 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react-router"],
+          "query-vendor": ["@tanstack/react-query", "@trpc/client", "@trpc/react-query"],
+          "ui-vendor": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-label",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-select",
+            "@radix-ui/react-separator",
+            "@radix-ui/react-slot",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-tooltip",
+            "class-variance-authority",
+            "clsx",
+            "tailwind-merge",
+            "sonner",
+          ],
+          "icon-vendor": ["lucide-react"],
+        },
+      },
+    },
   },
 }));

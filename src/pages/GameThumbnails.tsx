@@ -168,7 +168,13 @@ export default function GameThumbnails() {
                   >
                     <div className="h-12 w-12 shrink-0 overflow-hidden bg-slate-800">
                       {game.thumbnail ? (
-                        <img src={game.thumbnail} alt={game.name} className="h-full w-full object-cover" />
+                        <img
+                          src={game.thumbnail}
+                          alt={game.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
                         <ImageUp className="m-3 h-6 w-6 text-slate-500" />
                       )}
@@ -191,7 +197,13 @@ export default function GameThumbnails() {
           <CardContent className="space-y-5">
             <div className="aspect-square max-w-sm overflow-hidden border border-cyan-300/20 bg-slate-900">
               {selectedGame?.thumbnail ? (
-                <img src={selectedGame.thumbnail} alt={selectedGame.name} className="h-full w-full object-cover" />
+                <img
+                  src={selectedGame.thumbnail}
+                  alt={selectedGame.name}
+                  className="h-full w-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                />
               ) : (
                 <div className="flex h-full items-center justify-center text-slate-500">
                   <ImageUp className="h-16 w-16" />

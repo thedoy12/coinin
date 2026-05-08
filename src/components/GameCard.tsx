@@ -23,6 +23,8 @@ export function GameCard({ game }: GameCardProps) {
                 <img
                   src={game.thumbnail}
                   alt={game.name}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-contain p-4 opacity-95 drop-shadow-[0_0_22px_rgba(168,85,247,0.22)] transition-transform duration-300 group-hover:scale-105"
                 />
               </div>

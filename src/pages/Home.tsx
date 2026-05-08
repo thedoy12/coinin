@@ -107,6 +107,7 @@ export default function Home() {
                   alt={popup.title}
                   className="h-full w-full object-cover"
                   loading="eager"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
               </div>
@@ -268,7 +269,13 @@ export default function Home() {
                   >
                     <div className="relative h-60">
                       {game.thumbnail ? (
-                        <img src={game.thumbnail} alt={game.name} className="h-full w-full object-cover opacity-85" />
+                        <img
+                          src={game.thumbnail}
+                          alt={game.name}
+                          className="h-full w-full object-cover opacity-85"
+                          loading={index === 0 ? "eager" : "lazy"}
+                          decoding="async"
+                        />
                       ) : (
                         <div className="flex h-full items-center justify-center bg-slate-800">
                           <Gamepad2 className="h-16 w-16 text-slate-600" />
@@ -346,7 +353,13 @@ export default function Home() {
               <article className={`cyber-panel min-h-64 overflow-hidden transition-transform group-hover:-translate-y-2 ${index === 1 ? "sm:mt-8" : ""}`}>
                 <div className="relative h-64">
                   {game.thumbnail ? (
-                    <img src={game.thumbnail} alt={game.name} className="h-full w-full object-cover opacity-85 transition-transform duration-300 group-hover:scale-105" />
+                    <img
+                      src={game.thumbnail}
+                      alt={game.name}
+                      className="h-full w-full object-cover opacity-85 transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-slate-800">
                       <Gamepad2 className="h-16 w-16 text-slate-600" />

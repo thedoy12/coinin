@@ -197,7 +197,13 @@ export default function GameDetail() {
         <div className="flex items-start gap-6">
         <div className="angle-card w-24 h-24 sm:w-32 sm:h-32 bg-slate-800 overflow-hidden flex-shrink-0 shadow-lg shadow-cyan-500/10">
           {game.thumbnail ? (
-            <img src={game.thumbnail} alt={game.name} className="w-full h-full object-cover" />
+            <img
+              src={game.thumbnail}
+              alt={game.name}
+              className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Gamepad2 className="w-12 h-12 text-slate-600" />

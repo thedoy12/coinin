@@ -88,7 +88,7 @@
       linear-gradient(rgba(168, 85, 247, 0.07) 1px, transparent 1px),
       linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
     background-size: 48px 48px;
-    animation: grid-drift 18s linear infinite;
+    animation: grid-drift 42s linear infinite;
     mask-image: linear-gradient(to bottom, transparent, black 15%, black 78%, transparent);
   }
 
@@ -100,9 +100,8 @@
       linear-gradient(68deg, transparent 0 70%, rgba(34, 211, 238, 0.12) 70.4% 76%, transparent 76.6% 100%),
       linear-gradient(145deg, transparent 0 80%, rgba(236, 72, 153, 0.12) 80.4% 86%, transparent 86.6% 100%),
       repeating-linear-gradient(90deg, transparent 0 118px, rgba(168, 85, 247, 0.035) 119px 121px, transparent 122px 240px);
-    opacity: 0.68;
-    mix-blend-mode: screen;
-    animation: backdrop-drift 16s ease-in-out infinite;
+    opacity: 0.42;
+    animation: backdrop-drift 34s ease-in-out infinite;
     mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent);
   }
 
@@ -120,9 +119,8 @@
       linear-gradient(100deg, transparent 0 16%, rgba(168, 85, 247, 0.18) 17% 28%, transparent 29% 100%),
       linear-gradient(100deg, transparent 0 54%, rgba(34, 211, 238, 0.12) 55% 60%, transparent 61% 100%);
     clip-path: polygon(0 28%, 82% 0, 100% 22%, 18% 100%);
-    filter: blur(4px);
-    opacity: 0.68;
-    animation: backdrop-panel-slide 12s ease-in-out infinite;
+    opacity: 0.38;
+    animation: backdrop-panel-slide 32s ease-in-out infinite;
   }
 
   .cyber-backdrop::after {
@@ -135,13 +133,12 @@
         transparent 1px,
         transparent 13px
       );
-    opacity: 0.34;
-    animation: scanline-slide 7s linear infinite;
+    opacity: 0.2;
   }
 
   .cyber-horizon {
     z-index: 0;
-    height: 42vh;
+    height: 34vh;
     background-image:
       linear-gradient(rgba(34, 211, 238, 0.14) 1px, transparent 1px),
       linear-gradient(90deg, rgba(168, 85, 247, 0.12) 1px, transparent 1px),
@@ -149,9 +146,8 @@
     background-size: 46px 46px, 46px 46px, 100% 100%;
     transform: perspective(620px) rotateX(66deg) translateY(30%);
     transform-origin: bottom center;
-    opacity: 0.58;
-    filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.18));
-    animation: horizon-grid-drift 12s linear infinite;
+    opacity: 0.36;
+    animation: horizon-grid-drift 34s linear infinite;
     mask-image: linear-gradient(to top, black, rgba(0, 0, 0, 0.86) 50%, transparent 95%);
   }
 
@@ -162,7 +158,7 @@
       rgba(255, 255, 255, 0.04),
       transparent
     );
-    animation: scanline 5s ease-in-out infinite;
+    animation: scanline 12s ease-in-out infinite;
   }
 
   .neon-card {
@@ -360,10 +356,10 @@
     background:
       linear-gradient(110deg, transparent 0 18%, rgba(168, 85, 247, 0.38) 19% 28%, rgba(34, 211, 238, 0.18) 29% 34%, transparent 35% 100%);
     clip-path: polygon(0 20%, 78% 0, 100% 32%, 18% 100%);
-    filter: blur(12px);
-    opacity: 0.78;
+    filter: blur(6px);
+    opacity: 0.56;
     pointer-events: none;
-    animation: cyber-panel-drift 7s ease-in-out infinite;
+    animation: cyber-panel-drift 16s ease-in-out infinite;
   }
 
   .cyber-hero-shell {
@@ -383,9 +379,8 @@
     background:
       linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.16), transparent),
       linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.08), transparent);
-    mix-blend-mode: screen;
-    opacity: 0.64;
-    animation: cyber-wash 6.8s ease-in-out infinite;
+    opacity: 0.4;
+    animation: cyber-wash 15s ease-in-out infinite;
   }
 
   .cyber-hero-shell::after {
@@ -397,7 +392,7 @@
     box-shadow:
       0 0 20px rgba(34, 211, 238, 0.42),
       0 0 36px rgba(168, 85, 247, 0.34);
-    animation: cyber-line-pulse 2.8s ease-in-out infinite;
+    animation: cyber-line-pulse 6s ease-in-out infinite;
   }
 
   .cyber-scanlines {
@@ -412,9 +407,8 @@
       transparent 1px,
       transparent 9px
     );
-    opacity: 0.38;
+    opacity: 0.24;
     mask-image: linear-gradient(to bottom, transparent, black 18%, black 84%, transparent);
-    animation: scanline-slide 5.5s linear infinite;
   }
 
   .cyber-slice {
@@ -424,7 +418,7 @@
     pointer-events: none;
     background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.78), rgba(168, 85, 247, 0.72), transparent);
     clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
-    filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.5));
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.3);
     opacity: 0.58;
   }
 
@@ -433,7 +427,7 @@
     left: -10%;
     width: 28rem;
     transform: rotate(-2deg);
-    animation: cyber-slice-left 6s ease-in-out infinite;
+    animation: cyber-slice-left 14s ease-in-out infinite;
   }
 
   .cyber-slice-two {
@@ -441,7 +435,7 @@
     right: -8%;
     width: 22rem;
     transform: rotate(3deg);
-    animation: cyber-slice-right 7.4s ease-in-out infinite;
+    animation: cyber-slice-right 16s ease-in-out infinite;
   }
 
   .cyber-slice-three {
@@ -450,7 +444,7 @@
     width: 15rem;
     height: 1.2rem;
     opacity: 0.4;
-    animation: cyber-slice-right 5.8s ease-in-out infinite;
+    animation: cyber-slice-right 13s ease-in-out infinite;
   }
 
   .cyber-title-underline {
@@ -484,7 +478,7 @@
       0 0 74px rgba(168, 85, 247, 0.18),
       0 0 70px rgba(56, 189, 248, 0.16),
       inset 0 0 30px rgba(168, 85, 247, 0.12);
-    animation: hero-ring-drift 8s ease-in-out infinite;
+    animation: hero-ring-drift 18s ease-in-out infinite;
     pointer-events: none;
     opacity: 0.8;
   }
@@ -496,9 +490,9 @@
     background:
       radial-gradient(circle at center, rgba(168, 85, 247, 0.22), transparent 55%),
       linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.18), rgba(168, 85, 247, 0.2), transparent);
-    filter: blur(26px);
+    filter: blur(12px);
     transform: rotate(-6deg);
-    animation: beam-sweep 9s ease-in-out infinite;
+    animation: beam-sweep 20s ease-in-out infinite;
     pointer-events: none;
   }
 
@@ -516,7 +510,7 @@
     transform-origin: center;
     mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.95) 22%, black 78%, transparent);
     opacity: 0.7;
-    animation: wave-plane-drift 10s linear infinite;
+    animation: wave-plane-drift 24s linear infinite;
     pointer-events: none;
   }
 
@@ -531,11 +525,11 @@
     inset: 0;
     background: linear-gradient(110deg, transparent 28%, rgba(255, 255, 255, 0.55) 48%, transparent 68%);
     transform: translateX(-135%);
-    animation: cta-shimmer 3.8s ease-in-out infinite;
+    animation: cta-shimmer 7s ease-in-out infinite;
   }
 
   .poster-stack-card {
-    animation: poster-stack-float 4.6s ease-in-out infinite;
+    animation: poster-stack-float 9s ease-in-out infinite;
     transform: rotate(var(--poster-rotate, 0deg));
     will-change: transform;
   }
@@ -878,5 +872,55 @@
   .group img,
   .group-hover\:-translate-y-2 {
     transition: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .neon-grid {
+    animation: none;
+    background-size: 56px 56px;
+  }
+
+  .hero-violet-aura,
+  .hero-energy-ring,
+  .hero-energy-beam,
+  .hero-wave-plane,
+  .cyber-hero-shell::before,
+  .cyber-hero-shell::after,
+  .hero-cta::after,
+  .poster-stack-card,
+  .coin-float,
+  .coin-float-delayed,
+  .pulse-pop {
+    animation: none;
+  }
+
+  .cyber-scanlines,
+  .cyber-slice {
+    display: none;
+  }
+
+  .hero-violet-aura {
+    width: 24rem;
+    height: 14rem;
+    opacity: 0.36;
+    filter: blur(4px);
+  }
+
+  .hero-energy-ring {
+    opacity: 0.45;
+    box-shadow:
+      0 0 34px rgba(168, 85, 247, 0.12),
+      inset 0 0 18px rgba(168, 85, 247, 0.08);
+  }
+
+  .hero-energy-beam {
+    filter: blur(8px);
+    opacity: 0.48;
+  }
+
+  .marquee-track,
+  .spotlight-marquee {
+    animation-duration: 44s;
   }
 }
