@@ -7,9 +7,9 @@ export function markup(price: number, category: MarkupCategory = "game"): number
 function markupGame(price: number) {
   if (price <= 20000) return applyPercentageMarkup(price, 0.025, 300);
   if (price <= 100000) return applyPercentageMarkup(price, 0.02, 500);
-  if (price <= 300000) return applyPercentageMarkup(price, 0.012, 0);
-  if (price <= 1000000) return applyPercentageMarkup(price, 0.008, 0, 6000);
-  return applyPercentageMarkup(price, 0.005, 0, 10000);
+  if (price <= 300000) return applyPercentageMarkup(price, 0.014, 0);
+  if (price <= 1000000) return applyPercentageMarkup(price, 0.01, 0, 8000);
+  return applyPercentageMarkup(price, 0.006, 0, 12000);
 }
 
 function markupDigital(price: number) {

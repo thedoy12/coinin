@@ -6,10 +6,10 @@ describe("markup", () => {
     expect(markup(1900)).toBe(2200);
     expect(markup(10000)).toBe(10300);
     expect(markup(50000)).toBe(51000);
-    expect(markup(200000)).toBe(202400);
-    expect(markup(500000)).toBe(504000);
-    expect(markup(1000000)).toBe(1006000);
-    expect(markup(2000000)).toBe(2010000);
+    expect(markup(200000)).toBe(202800);
+    expect(markup(500000)).toBe(505000);
+    expect(markup(1000000)).toBe(1008000);
+    expect(markup(2000000)).toBe(2012000);
   });
 
   it("keeps digital products tighter than games", () => {
