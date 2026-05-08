@@ -4,7 +4,6 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useSEO } from "@/hooks/useSEO";
 import { runAdminAction, useAdminAction } from "@/lib/admin-actions";
-import { buildInvoiceMessage, buildWhatsAppUrl } from "@/lib/whatsapp-invoice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,7 +30,6 @@ import {
   Upload,
   Users,
   Wallet,
-  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -1222,24 +1220,6 @@ function TransactionTable({
   onStatus: (referenceId: string, status: "success" | "failed") => void;
   showCustomer?: boolean;
 }) {
-  const openInvoiceWhatsApp = (tx: TransactionRow) => {
-    const origin = window.location.origin;
-    const message = buildInvoiceMessage({
-      referenceId: tx.referenceId,
-      gameName: tx.gameName,
-      productName: tx.productName,
-      userIdGame: tx.userIdGame,
-      zoneId: tx.zoneId,
-      price: tx.price,
-      status: tx.status,
-      paymentStatus: tx.paymentStatus,
-      customerName: tx.customerName,
-      checkoutUrl: `${origin}/checkout/${tx.referenceId}`,
-      statusUrl: `${origin}/status/${tx.referenceId}`,
-    });
-    window.open(buildWhatsAppUrl(tx.customerPhone, message), "_blank", "noopener,noreferrer");
-  };
-
   return (
     <div>
       <div className="grid gap-3 lg:hidden">
@@ -1272,10 +1252,6 @@ function TransactionTable({
               <Button size="sm" variant="outline" className="border-amber-500/30 text-amber-300" onClick={() => onRetry(tx.referenceId)}>Retry</Button>
               <Button size="sm" variant="outline" className="border-green-500/30 text-green-300" onClick={() => onStatus(tx.referenceId, "success")}>Success</Button>
               <Button size="sm" variant="outline" className="border-red-500/30 text-red-300" onClick={() => onStatus(tx.referenceId, "failed")}>Failed</Button>
-              <Button size="sm" variant="outline" className="border-green-500/30 text-green-300 sm:col-span-4" onClick={() => openInvoiceWhatsApp(tx)}>
-                <MessageCircle className="mr-1.5 h-4 w-4" />
-                Invoice WA
-              </Button>
             </div>
           </div>
         ))}
@@ -1324,7 +1300,6 @@ function TransactionTable({
                   <Button size="sm" variant="ghost" className="h-7 text-xs text-amber-400" onClick={() => onRetry(tx.referenceId)}>Retry</Button>
                   <Button size="sm" variant="ghost" className="h-7 text-xs text-green-400" onClick={() => onStatus(tx.referenceId, "success")}>Success</Button>
                   <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => onStatus(tx.referenceId, "failed")}>Failed</Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs text-green-400" onClick={() => openInvoiceWhatsApp(tx)}>WA</Button>
                 </div>
               </TableCell>
             </TableRow>

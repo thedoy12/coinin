@@ -9,8 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSEO } from "@/hooks/useSEO";
 import { apiGetWithHeaders } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
-import { buildInvoiceMessage, buildWhatsAppUrl } from "@/lib/whatsapp-invoice";
-import { ArrowLeft, Copy, Check, QrCode, User, Mail, Phone, Sparkles, MessageCircle } from "lucide-react";
+import { ArrowLeft, Copy, Check, QrCode, User, Mail, Phone, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Checkout() {
@@ -118,20 +117,6 @@ export default function Checkout() {
     isValidEmail(customerEmail) &&
     isValidPhone(customerPhone) &&
     !isCreatingPayment;
-  const invoiceMessage = buildInvoiceMessage({
-    referenceId: transaction.referenceId,
-    gameName: transaction.gameName,
-    productName: transaction.productName,
-    userIdGame: transaction.userIdGame,
-    zoneId: transaction.zoneId,
-    price: transaction.price,
-    status: transaction.status,
-    paymentStatus: transaction.paymentStatus,
-    customerName: customerName.trim() || transaction.customerName,
-    checkoutUrl: `${window.location.origin}/checkout/${transaction.referenceId}`,
-    statusUrl: `${window.location.origin}/status/${transaction.referenceId}`,
-  });
-  const whatsappInvoiceUrl = buildWhatsAppUrl(customerPhone || transaction.customerPhone, invoiceMessage);
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -287,17 +272,6 @@ export default function Checkout() {
                 <QrCode className="w-4 h-4 mr-2" />
                 {isCreatingPayment ? "Memproses..." : "Bayar Sekarang"}
               </Button>
-              <a href={whatsappInvoiceUrl} target="_blank" rel="noreferrer">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!isValidPhone(customerPhone || transaction.customerPhone || "")}
-                  className="w-full rounded-none border-green-500/30 bg-green-500/10 font-black text-green-200 hover:bg-green-500/20"
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Kirim Invoice ke WA
-                </Button>
-              </a>
               <p className="text-xs text-center text-slate-500">
                 Pembayaran aman melalui sistem pembayaran CoinIn
               </p>
