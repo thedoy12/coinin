@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import type { HttpBindings } from "@hono/node-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { mkdir, writeFile } from "fs/promises";
@@ -75,70 +76,21 @@ app.post("/api/auth/login", async (c) => {
     const body = await c.req.json().catch(() => null);
     const login = typeof body?.login === "string" ? body.login : "";
     const password = typeof body?.password === "string" ? body.password : "";
-
-    if (!login || !password) {
-      return c.json({ error: "Username/email dan password wajib diisi" }, 400);
-    }
-
-    const user = await findUserByLogin(login);
-    if (!user || !verifyPassword(password, user.passwordHash)) {
-      return c.json({ error: "Username/email atau password salah" }, 401);
-    }
-
-    await getDb()
-      .update(users)
-      .set({ lastSignInAt: new Date(), updatedAt: new Date() })
-      .where(eq(users.id, user.id));
-
-    const token = await signSessionToken({
-      unionId: user.unionId,
-      clientId: "local",
-    });
-    const headers = new Headers();
-    appendSessionCookie(headers, c.req.raw.headers, token);
-
-    return c.json({ success: true, user }, 200, Object.fromEntries(headers.entries()));
+    return performDirectLogin(c, login, password);
   } catch (error) {
     console.error("Direct login error:", error);
     return c.json({ error: "Gagal login" }, 500);
   }
 });
 
-app.get("/api/debug/login-steps", async (c) => {
-  const started = Date.now();
-  const marks: Record<string, number | string | boolean | null> = {};
+app.get("/api/auth/login", async (c) => {
   try {
-    marks.start = 0;
-    const user = await findUserByLogin("admin");
-    marks.findUserMs = Date.now() - started;
-    marks.hasUser = Boolean(user);
-    marks.hashScheme = user?.passwordHash?.split(":")[0] ?? null;
-
-    const passwordOk = user ? verifyPassword("andika123", user.passwordHash) : false;
-    marks.verifyMs = Date.now() - started;
-    marks.passwordOk = passwordOk;
-
-    if (user) {
-      const token = await signSessionToken({
-        unionId: user.unionId,
-        clientId: "local",
-      });
-      marks.signMs = Date.now() - started;
-      marks.tokenLength = token.length;
-
-      await getDb()
-        .update(users)
-        .set({ lastSignInAt: new Date(), updatedAt: new Date() })
-        .where(eq(users.id, user.id));
-      marks.updateMs = Date.now() - started;
-    }
-
-    marks.totalMs = Date.now() - started;
-    return c.json(marks);
+    const login = c.req.header("x-coinin-login") || "";
+    const password = c.req.header("x-coinin-password") || "";
+    return performDirectLogin(c, login, password);
   } catch (error) {
-    marks.error = error instanceof Error ? error.message : "Unknown error";
-    marks.totalMs = Date.now() - started;
-    return c.json(marks, 500);
+    console.error("Direct login header error:", error);
+    return c.json({ error: "Gagal login" }, 500);
   }
 });
 
@@ -396,6 +348,31 @@ if (env.isProduction && process.env.VERCEL !== "1") {
 async function writeUploadFile(targetPath: string, bytes: Buffer) {
   await mkdir(path.dirname(targetPath), { recursive: true });
   await writeFile(targetPath, bytes);
+}
+
+async function performDirectLogin(c: Context, login: string, password: string) {
+  if (!login || !password) {
+    return c.json({ error: "Username/email dan password wajib diisi" }, 400);
+  }
+
+  const user = await findUserByLogin(login);
+  if (!user || !verifyPassword(password, user.passwordHash)) {
+    return c.json({ error: "Username/email atau password salah" }, 401);
+  }
+
+  await getDb()
+    .update(users)
+    .set({ lastSignInAt: new Date(), updatedAt: new Date() })
+    .where(eq(users.id, user.id));
+
+  const token = await signSessionToken({
+    unionId: user.unionId,
+    clientId: "local",
+  });
+  const headers = new Headers();
+  appendSessionCookie(headers, c.req.raw.headers, token);
+
+  return c.json({ success: true, user }, 200, Object.fromEntries(headers.entries()));
 }
 
 function extensionFromMime(mime: string) {

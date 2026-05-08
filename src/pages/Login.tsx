@@ -43,13 +43,12 @@ export default function Login() {
     setLoginPending(true);
     try {
       const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "GET",
+        headers: {
+          "x-coinin-login": form.username,
+          "x-coinin-password": form.password,
+        },
         credentials: "include",
-        body: JSON.stringify({
-          login: form.username,
-          password: form.password,
-        }),
       });
       const result = await response.json() as { success?: boolean; error?: string };
       if (!response.ok || !result.success) {
