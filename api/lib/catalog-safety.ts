@@ -38,7 +38,7 @@ export const publicCatalogThumbnails: Record<string, string> = {
 };
 
 export function getPublicCatalogThumbnail(slug: string, fallback?: string | null) {
-  return publicCatalogThumbnails[slug] ?? fallback ?? null;
+  return fallback ?? publicCatalogThumbnails[slug] ?? null;
 }
 
 const sensitiveCatalogTerms = [
