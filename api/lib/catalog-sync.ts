@@ -40,7 +40,7 @@ type NormalizedService = {
   instructions: string;
 };
 
-const maxGameCatalogSize = 35;
+const maxGameCatalogSize = 80;
 const priorityGameSlugs = [
   "mobile-legends",
   "free-fire",
@@ -411,7 +411,13 @@ function isGameCatalogService(row: NormalizedService) {
 }
 
 function isAllowedUtilityService(row: NormalizedService) {
-  return isTopupPulsaService(row) || isTokenPlnService(row) || isWalletTopupService(row);
+  return (
+    isTopupPulsaService(row) ||
+    isDataPackageService(row) ||
+    isTokenPlnService(row) ||
+    isWalletTopupService(row) ||
+    isAllowedVoucherService(row)
+  );
 }
 
 function isTopupPulsaService(row: NormalizedService) {
@@ -420,12 +426,23 @@ function isTopupPulsaService(row: NormalizedService) {
   return !/aktivasi|voucher|masa aktif|telepon pas|paket|data|internet|kuota|cek nama/i.test(row.productName);
 }
 
+function isDataPackageService(row: NormalizedService) {
+  const text = `${row.gameName} ${row.productName} ${row.sourceCategory}`;
+  if (!/paket data|\bdata\b|internet|kuota/i.test(text)) return false;
+  return !/aktivasi|voucher|masa aktif|telepon pas|cek nama/i.test(row.productName);
+}
+
 function isTokenPlnService(row: NormalizedService) {
   return isPlnService(row.gameName) && /pln/i.test(row.sourceCategory) && !/cek nama/i.test(row.productName);
 }
 
 function isWalletTopupService(row: NormalizedService) {
   return isWalletService(row.gameName, row.productName) && /e-money/i.test(row.sourceCategory) && !/cek nama/i.test(row.productName);
+}
+
+function isAllowedVoucherService(row: NormalizedService) {
+  if (row.category !== "Voucher") return false;
+  return !/cek nama|trial|test produk/i.test(row.productName);
 }
 
 function isPulsaService(gameName: string, productName: string) {
@@ -532,6 +549,16 @@ function normalizeGameName(brand: string, productName: string, category: string)
     if (/shopee\s*pay|shopeepay/i.test(text)) return "Saldo ShopeePay";
     return normalizedBrand;
   }
+  if (isDataPackageText(text)) {
+    if (/by\.?u/i.test(text)) return "Paket Data By.U";
+    if (/axis/i.test(text)) return "Paket Data Axis";
+    if (/\bxl\b/i.test(text)) return "Paket Data XL";
+    if (/telkomsel/i.test(text)) return "Paket Data Telkomsel";
+    if (/indosat|im3/i.test(text)) return "Paket Data Indosat";
+    if (/tri|three/i.test(text)) return "Paket Data Tri";
+    if (/smartfren/i.test(text)) return "Paket Data Smartfren";
+    return normalizedBrand.toLowerCase().includes("data") ? normalizedBrand : `Paket Data ${normalizedBrand}`;
+  }
   if (isPulsaService(normalizedBrand, normalizedProduct)) {
     if (/by\.?u/i.test(text)) return "Pulsa By.U";
     if (/axis/i.test(text)) return "Pulsa Axis";
@@ -609,6 +636,10 @@ function buildInstructions(gameName: string, category: string, zoneRequired: boo
     return `Masukkan User ID dan Zone ID / Server ${gameName} dengan benar.`;
   }
   return `Masukkan User ID ${gameName} dengan benar.`;
+}
+
+function isDataPackageText(text: string) {
+  return /paket data|\bdata\b|internet|kuota/i.test(text);
 }
 
 function isPhoneService(gameName: string) {
