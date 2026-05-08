@@ -27,7 +27,7 @@ export const gameRouter = createRouter({
       .select()
       .from(games)
       .where(and(eq(games.isActive, 1), publicSafeGameFilter()))
-      .orderBy(games.name)
+      .orderBy(catalogGroupOrder(), games.name)
       .then(withPublicThumbnails);
   }),
 
@@ -53,6 +53,21 @@ export const gameRouter = createRouter({
       return result[0] ? withPublicThumbnail(result[0]) : null;
     }),
 });
+
+function catalogGroupOrder() {
+  return sql`
+    case
+      when ${games.slug} like 'pulsa-%'
+        or ${games.slug} like 'paket-data-%'
+        or ${games.slug} like 'saldo-%'
+        or ${games.slug} in ('pln', 'token-pln', 'k-vision-dan-gol', 'pertamina-gas')
+        or ${games.category} = 'Digital'
+        then 2
+      when ${games.category} = 'Voucher' then 1
+      else 0
+    end
+  `;
+}
 
 function withPublicThumbnails<T extends { slug: string; thumbnail: string | null }>(rows: T[]) {
   return rows.map(withPublicThumbnail);
