@@ -9,12 +9,16 @@ import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 import { getDb } from "./queries/connection";
-import { games, transactions } from "@db/schema";
+import { games, transactions, users } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { parsePaymentNotification, verifyPaymentCallback } from "./lib/payment";
 import { expireOldTransactions, fulfillPaidTransaction, syncProcessingTopups } from "./lib/transaction";
 import { rateLimit } from "./lib/rate-limit";
 import { authenticateRequest } from "./lib/session-auth";
+import { findUserByLogin } from "./queries/users";
+import { verifyPassword } from "./lib/password";
+import { signSessionToken } from "./lib/session";
+import { appendSessionCookie } from "./lib/cookies";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -65,6 +69,40 @@ app.get("/api/health", async (c) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return c.json({ ok: false, database: "error", message }, 500);
+  }
+});
+
+app.post("/api/auth/login", async (c) => {
+  try {
+    const body = await c.req.json().catch(() => null);
+    const login = typeof body?.login === "string" ? body.login : "";
+    const password = typeof body?.password === "string" ? body.password : "";
+
+    if (!login || !password) {
+      return c.json({ error: "Username/email dan password wajib diisi" }, 400);
+    }
+
+    const user = await findUserByLogin(login);
+    if (!user || !verifyPassword(password, user.passwordHash)) {
+      return c.json({ error: "Username/email atau password salah" }, 401);
+    }
+
+    await getDb()
+      .update(users)
+      .set({ lastSignInAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, user.id));
+
+    const token = await signSessionToken({
+      unionId: user.unionId,
+      clientId: "local",
+    });
+    const headers = new Headers();
+    appendSessionCookie(headers, c.req.raw.headers, token);
+
+    return c.json({ success: true, user }, 200, Object.fromEntries(headers.entries()));
+  } catch (error) {
+    console.error("Direct login error:", error);
+    return c.json({ error: "Gagal login" }, 500);
   }
 });
 

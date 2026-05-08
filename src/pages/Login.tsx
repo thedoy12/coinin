@@ -22,20 +22,12 @@ export default function Login() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [loginPending, setLoginPending] = useState(false);
   const [form, setForm] = useState({
     username: "",
     name: "",
     email: "",
     password: "",
-  });
-
-  const login = trpc.auth.login.useMutation({
-    onSuccess: async () => {
-      await utils.auth.me.invalidate();
-      toast.success("Berhasil masuk");
-      navigate("/");
-    },
-    onError: (error) => toast.error(error.message),
   });
 
   const register = trpc.auth.register.useMutation({
@@ -47,12 +39,35 @@ export default function Login() {
     onError: (error) => toast.error(error.message),
   });
 
+  const loginDirectly = async () => {
+    setLoginPending(true);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          login: form.username,
+          password: form.password,
+        }),
+      });
+      const result = await response.json() as { success?: boolean; error?: string };
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Gagal login");
+      }
+      await utils.auth.me.invalidate();
+      toast.success("Berhasil masuk");
+      navigate("/");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal login");
+    } finally {
+      setLoginPending(false);
+    }
+  };
+
   const submit = () => {
     if (mode === "login") {
-      login.mutate({
-        login: form.username,
-        password: form.password,
-      });
+      void loginDirectly();
       return;
     }
 
@@ -157,9 +172,9 @@ export default function Login() {
             <Button
               className="angle-card w-full rounded-none bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black h-11 shadow-lg shadow-cyan-500/20"
               onClick={submit}
-              disabled={login.isPending || register.isPending}
+              disabled={loginPending || register.isPending}
             >
-              {login.isPending || register.isPending
+              {loginPending || register.isPending
                 ? "Memproses..."
                 : mode === "login"
                 ? "Masuk"
