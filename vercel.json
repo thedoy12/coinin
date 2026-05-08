@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/vercel.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     },
     {
@@ -16,15 +16,15 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/vercel.ts"
+      "dest": "/api/index.ts"
     },
     {
       "src": "/robots.txt",
-      "dest": "/api/vercel.ts"
+      "dest": "/api/index.ts"
     },
     {
       "src": "/sitemap.xml",
-      "dest": "/api/vercel.ts"
+      "dest": "/api/index.ts"
     },
     {
       "handle": "filesystem"
