@@ -45,6 +45,7 @@ export const publicCatalogThumbnails: Record<string, string> = {
   "saldo-ovo": "https://images.weserv.nl/?url=i.ibb.co/tpq5G19R/ovo-logo.png",
   "saldo-shopeepay": "https://images.weserv.nl/?url=i.ibb.co/S4gv0MSn/shopeepay-logo.png",
   "token-pln": "https://images.weserv.nl/?url=i.ibb.co/5HXzjRY/pln-logo.png",
+  "valorant-mobile": "https://images.weserv.nl/?url=i.ibb.co/2sZzLh8s/Valorant-Mobile-Logo.png",
 };
 
 export function getPublicCatalogThumbnail(slug: string, fallback?: string | null) {
