@@ -57,6 +57,13 @@
       "when": 1777672000000,
       "tag": "0007_popup_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777673000000,
+      "tag": "0008_payment_checkout_url",
+      "breakpoints": true
     }
   ]
 }

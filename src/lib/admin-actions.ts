@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiGetWithHeaders } from "@/lib/api-client";
+import { apiPostJson } from "@/lib/api-client";
 
 export function useAdminAction<TInput = void, TResult = unknown>({
   action,
@@ -30,8 +30,8 @@ export function useAdminAction<TInput = void, TResult = unknown>({
 }
 
 export function runAdminAction<TInput = void, TResult = unknown>(action: string, input?: TInput) {
-  return apiGetWithHeaders<TResult>("/api/admin/action", {
-    "x-coinin-admin-action": action,
-    "x-coinin-admin-input": encodeURIComponent(JSON.stringify(input ?? null)),
+  return apiPostJson<TResult>("/api/admin/action", {
+    action,
+    input: input ?? null,
   });
 }

@@ -68,6 +68,22 @@ export const paymentRouter = createRouter({
           message: "Transaksi sudah kadaluarsa. Silakan buat order baru.",
         });
       }
+      if (tx.paymentStatus === "pending" && tx.paymentReference) {
+        if (tx.paymentCheckoutUrl) {
+          return {
+            success: true,
+            data: {
+              reference: tx.paymentReference,
+              merchant_ref: input.referenceId,
+              checkout_url: tx.paymentCheckoutUrl,
+            },
+          };
+        }
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Pembayaran untuk transaksi ini sudah dibuat. Silakan cek status transaksi.",
+        });
+      }
 
       const paymentResult = await createQrisPayment({
         referenceId: input.referenceId,
@@ -93,6 +109,7 @@ export const paymentRouter = createRouter({
             customerPhone: normalizePhone(input.customerPhone),
             paymentMethod: "Pembayaran Online",
             paymentReference: paymentResult.data.reference,
+            paymentCheckoutUrl: paymentResult.data.checkout_url || null,
             paymentStatus: "pending",
             expiresAt: new Date(Date.now() + 60 * 60 * 1000),
             updatedAt: new Date(),

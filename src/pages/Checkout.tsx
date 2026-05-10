@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSEO } from "@/hooks/useSEO";
-import { apiGetWithHeaders } from "@/lib/api-client";
+import { apiPostJson } from "@/lib/api-client";
 import { getTargetCopy } from "@/lib/target-copy";
-import { ArrowLeft, Copy, Check, QrCode, User, Mail, Phone, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, Check, QrCode, User, Mail, Phone, Sparkles, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Checkout() {
@@ -67,11 +67,11 @@ export default function Checkout() {
 
     setIsCreatingPayment(true);
     try {
-      const result = await apiGetWithHeaders<PaymentCreateResponse>("/api/payment/create-qris", {
-        "x-coinin-reference-id": referenceId,
-        "x-coinin-customer-name": customerName.trim(),
-        "x-coinin-customer-email": customerEmail.trim(),
-        "x-coinin-customer-phone": customerPhone.trim(),
+      const result = await apiPostJson<PaymentCreateResponse>("/api/payment/create-qris", {
+        referenceId,
+        customerName: customerName.trim(),
+        customerEmail: customerEmail.trim(),
+        customerPhone: customerPhone.trim(),
       });
       if (result.success && result.data?.checkout_url) {
         toast.success("Halaman pembayaran berhasil dibuat!");
@@ -107,11 +107,16 @@ export default function Checkout() {
     );
   }
 
-  const isPaid = transaction.paymentStatus === "paid";
+  const isPaymentPaid = transaction.paymentStatus === "paid";
+  const isTopupFailed = transaction.status === "failed" && transaction.topupStatus === "failed";
+  const isCompleted = transaction.status === "success" && transaction.topupStatus === "success";
   const targetCopy = getTargetCopy(transaction.gameName, transaction.category);
   const expiresAt = transaction.expiresAt ? new Date(transaction.expiresAt) : null;
   const isExpired = transaction.paymentStatus === "expired" || Boolean(expiresAt && expiresAt.getTime() < now);
   const timeLeft = expiresAt ? formatDuration(expiresAt.getTime() - now) : "-";
+  const existingCheckoutUrl = typeof transaction.paymentCheckoutUrl === "string"
+    ? transaction.paymentCheckoutUrl
+    : "";
   const canPay =
     Boolean(customerName.trim()) &&
     isValidEmail(customerEmail) &&
@@ -182,18 +187,30 @@ export default function Checkout() {
               <div className="flex items-center gap-3">
               <div
                 className={`w-3 h-3 rounded-full ${
-                  isPaid
+                  isCompleted
                     ? "bg-green-500"
-                    : transaction.paymentStatus === "failed" || isExpired
+                    : transaction.paymentStatus === "failed" || isExpired || isTopupFailed
                     ? "bg-red-500"
+                    : isPaymentPaid
+                    ? "bg-blue-500 animate-pulse"
                     : "bg-amber-500 animate-pulse"
                 }`}
               />
               <span className="text-white font-medium capitalize">
-                {isPaid ? "Pembayaran Berhasil" : isExpired ? "Transaksi Kadaluarsa" : transaction.paymentStatus === "unpaid" ? "Menunggu Pembayaran" : transaction.paymentStatus}
+                {isCompleted
+                  ? "Top-up Berhasil"
+                  : isTopupFailed
+                  ? "Top-up Gagal"
+                  : isPaymentPaid
+                  ? "Pembayaran Berhasil, Top-up Diproses"
+                  : isExpired
+                  ? "Transaksi Kadaluarsa"
+                  : transaction.paymentStatus === "unpaid"
+                  ? "Menunggu Pembayaran"
+                  : transaction.paymentStatus}
               </span>
               </div>
-              {!isPaid && !isExpired && (
+              {!isCompleted && !isExpired && !isTopupFailed && (
                 <span className="border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">
                   {timeLeft}
                 </span>
@@ -208,7 +225,7 @@ export default function Checkout() {
         </Card>
 
         {/* Payment Form */}
-        {!isPaid && !isExpired && ["unpaid", "pending"].includes(transaction.paymentStatus) && (
+        {!isPaymentPaid && !isExpired && !isTopupFailed && transaction.paymentStatus === "unpaid" && (
           <Card className="hud-frame bg-slate-950/80 border-cyan-300/20 rounded-none">
             <CardHeader>
               <CardTitle className="text-white text-base">Data Pelanggan</CardTitle>
@@ -279,6 +296,28 @@ export default function Checkout() {
           </Card>
         )}
 
+        {!isPaymentPaid && !isExpired && transaction.paymentStatus === "pending" && existingCheckoutUrl && (
+          <Card className="hud-frame bg-slate-950/80 border-cyan-300/20 rounded-none">
+            <CardHeader>
+              <CardTitle className="text-white text-base">Pembayaran Sudah Dibuat</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-400">
+                Lanjutkan pembayaran dari invoice yang sudah dibuat untuk transaksi ini.
+              </p>
+              <Button
+                onClick={() => {
+                  window.location.href = existingCheckoutUrl;
+                }}
+                className="angle-card w-full rounded-none bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black h-12"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Buka Halaman Pembayaran
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {isExpired && (
           <Card className="bg-red-950/20 border-red-800/50">
             <CardContent className="py-6 text-center">
@@ -296,19 +335,38 @@ export default function Checkout() {
         )}
 
         {/* Success Actions */}
-        {isPaid && (
+        {isPaymentPaid && !isTopupFailed && (
           <Card className="bg-green-950/20 border-green-800/50">
             <CardContent className="py-6 text-center">
               <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Check className="w-6 h-6 text-green-500" />
               </div>
-              <h3 className="text-white font-bold mb-1">Pembayaran Berhasil!</h3>
+              <h3 className="text-white font-bold mb-1">
+                {isCompleted ? "Top-up Berhasil!" : "Pembayaran Berhasil!"}
+              </h3>
               <p className="text-slate-400 text-sm mb-4">
                 Top-up sedang diproses. Silakan cek status secara berkala.
               </p>
               <Link to={`/status/${transaction.referenceId}`}>
                 <Button className="bg-green-600 hover:bg-green-700 text-white">
                   Cek Status Top Up
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {isTopupFailed && (
+          <Card className="bg-red-950/20 border-red-800/50">
+            <CardContent className="py-6 text-center">
+              <XCircle className="mx-auto mb-3 h-10 w-10 text-red-400" />
+              <h3 className="text-white font-bold mb-1">Top-up Gagal</h3>
+              <p className="text-slate-400 text-sm mb-4">
+                Pembayaran berhasil, tetapi proses top-up gagal. Silakan hubungi admin dengan Reference ID.
+              </p>
+              <Link to={`/status/${transaction.referenceId}`}>
+                <Button className="bg-red-600 hover:bg-red-700 text-white">
+                  Lihat Detail Status
                 </Button>
               </Link>
             </CardContent>
@@ -338,7 +396,7 @@ function isValidPhone(value: string) {
 type PaymentCreateResponse = {
   success: boolean;
   error?: string;
-  data?: {
-    checkout_url?: string | null;
-  };
+    data?: {
+      checkout_url?: string | null;
+    };
 };

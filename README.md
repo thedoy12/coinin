@@ -228,7 +228,3 @@ Harga dibulatkan ke atas ke kelipatan Rp100. Produk digital memakai markup lebih
 ## License
 
 MIT
-
-Username/email: admin
-Password: C0inIn!9Qm7Zp2Va6
-Role: admin

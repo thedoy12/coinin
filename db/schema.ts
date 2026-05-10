@@ -103,6 +103,7 @@ export const transactions = pgTable(
     paymentStatus: varchar("paymentStatus", { length: 50 }).default("unpaid").notNull(),
     paymentMethod: varchar("paymentMethod", { length: 50 }),
     paymentReference: varchar("paymentReference", { length: 255 }),
+    paymentCheckoutUrl: varchar("paymentCheckoutUrl", { length: 1000 }),
     topupStatus: varchar("topupStatus", { length: 50 }),
     topupReference: varchar("topupReference", { length: 255 }),
     topupResponse: text("topupResponse"),

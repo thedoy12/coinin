@@ -98,76 +98,13 @@ app.post("/api/auth/login", async (c) => {
   }
 });
 
-app.get("/api/order/create", async (c) => {
-  try {
-    const input = createOrderInput.parse({
-      productId: Number(c.req.header("x-coinin-product-id") || c.req.query("productId")),
-      userIdGame: c.req.header("x-coinin-user-id-game") || c.req.query("userIdGame"),
-      zoneId: c.req.header("x-coinin-zone-id") || c.req.query("zoneId") || undefined,
-    });
-    return c.json(await createOrderApi(input));
-  } catch (error) {
-    return handlePublicApiError(c, error, "Gagal membuat order");
-  }
-});
-
 app.post("/api/order/create", async (c) => {
   try {
     const body = await c.req.json().catch(() => null);
     const input = createOrderInput.parse(body);
-    const db = getDb();
-    const referenceId = `TRX-${nanoid(10).toUpperCase()}`;
-    const productResult = await db
-      .select({ product: products, game: games })
-      .from(products)
-      .innerJoin(games, eq(products.gameId, games.id))
-      .where(and(
-        eq(products.id, input.productId),
-        eq(products.isActive, 1),
-        eq(games.isActive, 1),
-        publicSafeGameFilter(),
-        publicSafeProductFilter(),
-      ))
-      .limit(1);
-
-    const product = productResult[0]?.product;
-    const game = productResult[0]?.game;
-    if (!product || !game) {
-      return c.json({ error: "Produk tidak ditemukan" }, 404);
-    }
-    if (game.requiresZoneId === 1 && !input.zoneId?.trim()) {
-      return c.json({ error: "Zone ID / Server wajib diisi untuk game ini" }, 400);
-    }
-
-    await db.insert(transactions).values({
-      referenceId,
-      gameId: product.gameId,
-      productId: input.productId,
-      userIdGame: input.userIdGame.trim(),
-      zoneId: input.zoneId || null,
-      price: product.priceSell,
-      status: "pending",
-      paymentStatus: "unpaid",
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-    });
-
-    return c.json({ referenceId, status: "pending", price: product.priceSell });
+    return c.json(await createOrderApi(input));
   } catch (error) {
     return handlePublicApiError(c, error, "Gagal membuat order");
-  }
-});
-
-app.get("/api/payment/create-qris", async (c) => {
-  try {
-    const input = createPaymentInput.parse({
-      referenceId: c.req.header("x-coinin-reference-id") || c.req.query("referenceId"),
-      customerName: c.req.header("x-coinin-customer-name") || c.req.query("customerName"),
-      customerEmail: c.req.header("x-coinin-customer-email") || c.req.query("customerEmail"),
-      customerPhone: c.req.header("x-coinin-customer-phone") || c.req.query("customerPhone"),
-    });
-    return c.json(await createPaymentApi(input));
-  } catch (error) {
-    return handlePublicApiError(c, error, "Gagal membuat pembayaran");
   }
 });
 
@@ -175,97 +112,16 @@ app.post("/api/payment/create-qris", async (c) => {
   try {
     const body = await c.req.json().catch(() => null);
     const input = createPaymentInput.parse(body);
-    const db = getDb();
-
-    const transactionResult = await db
-      .select({
-        transaction: transactions,
-        game: games,
-        product: products,
-      })
-      .from(transactions)
-      .where(eq(transactions.referenceId, input.referenceId))
-      .innerJoin(games, eq(transactions.gameId, games.id))
-      .innerJoin(products, eq(transactions.productId, products.id))
-      .limit(1);
-
-    if (!transactionResult[0]) {
-      return c.json({ error: "Transaksi tidak ditemukan" }, 404);
-    }
-
-    const { transaction: tx, game, product } = transactionResult[0];
-    if (tx.paymentStatus === "paid" || tx.status === "success") {
-      return c.json({ error: "Transaksi sudah dibayar" }, 400);
-    }
-    if (tx.expiresAt && tx.expiresAt.getTime() < Date.now()) {
-      await db
-        .update(transactions)
-        .set({
-          paymentStatus: "expired",
-          status: "failed",
-          lastError: "Payment expired",
-          updatedAt: new Date(),
-        })
-        .where(eq(transactions.referenceId, input.referenceId));
-      return c.json({ error: "Transaksi sudah kadaluarsa. Silakan buat order baru." }, 400);
-    }
-
-    const paymentResult = await createQrisPayment({
-      referenceId: input.referenceId,
-      amount: tx.price,
-      customerName: input.customerName,
-      customerEmail: input.customerEmail.toLowerCase(),
-      customerPhone: normalizePhone(input.customerPhone),
-      items: [
-        {
-          name: `${game.name} - ${product.name}`,
-          price: tx.price,
-          quantity: 1,
-        },
-      ],
-    });
-
-    if (paymentResult.success && paymentResult.data) {
-      await db
-        .update(transactions)
-        .set({
-          customerName: input.customerName,
-          customerEmail: input.customerEmail.toLowerCase(),
-          customerPhone: normalizePhone(input.customerPhone),
-          paymentMethod: "Pembayaran Online",
-          paymentReference: paymentResult.data.reference,
-          paymentStatus: "pending",
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-          updatedAt: new Date(),
-        })
-        .where(eq(transactions.referenceId, input.referenceId));
-    }
-
-    return c.json(paymentResult);
+    return c.json(await createPaymentApi(input));
   } catch (error) {
     return handlePublicApiError(c, error, "Gagal membuat pembayaran");
   }
 });
 
-app.get("/api/auth/login", async (c) => {
+app.post("/api/auth/register", async (c) => {
   try {
-    const login = c.req.header("x-coinin-login") || "";
-    const password = c.req.header("x-coinin-password") || "";
-    return performDirectLogin(c, login, password);
-  } catch (error) {
-    console.error("Direct login header error:", error);
-    return c.json({ error: "Gagal login" }, 500);
-  }
-});
-
-app.get("/api/auth/register", async (c) => {
-  try {
-    const input = authRegisterInput.parse({
-      username: c.req.header("x-coinin-username") || c.req.query("username"),
-      name: c.req.header("x-coinin-name") || c.req.query("name"),
-      email: c.req.header("x-coinin-email") || c.req.query("email"),
-      password: c.req.header("x-coinin-password") || c.req.query("password"),
-    });
+    const body = await c.req.json().catch(() => null);
+    const input = authRegisterInput.parse(body);
     return performDirectRegister(c, input);
   } catch (error) {
     return handlePublicApiError(c, error, "Gagal membuat akun");
@@ -473,7 +329,7 @@ app.post("/api/admin/game-thumbnail", async (c) => {
   }
 });
 
-app.get("/api/admin/action", async (c) => {
+app.post("/api/admin/action", async (c) => {
   c.header("Cache-Control", "no-store");
   try {
     const user = await authenticateRequest(c.req.raw.headers).catch(() => null);
@@ -484,8 +340,10 @@ app.get("/api/admin/action", async (c) => {
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const action = c.req.header("x-coinin-admin-action") || "";
-    const input = parseAdminActionInput(c.req.header("x-coinin-admin-input"));
+    const body = await c.req.json().catch(() => null);
+    const parsed = parseAdminActionInput(body);
+    const action = parsed.action;
+    const input = parsed.input;
     const caller = appRouter.createCaller({
       req: c.req.raw,
       resHeaders: new Headers(),
@@ -804,6 +662,19 @@ async function createPaymentApi(input: z.infer<typeof createPaymentInput>) {
       .where(eq(transactions.referenceId, input.referenceId));
     throw new PublicApiError("Transaksi sudah kadaluarsa. Silakan buat order baru.", 400);
   }
+  if (tx.paymentStatus === "pending" && tx.paymentReference) {
+    if (tx.paymentCheckoutUrl) {
+      return {
+        success: true,
+        data: {
+          reference: tx.paymentReference,
+          merchant_ref: input.referenceId,
+          checkout_url: tx.paymentCheckoutUrl,
+        },
+      };
+    }
+    throw new PublicApiError("Pembayaran untuk transaksi ini sudah dibuat. Silakan cek status transaksi.", 400);
+  }
 
   const normalizedPhone = normalizePhone(input.customerPhone);
   const normalizedEmail = input.customerEmail.toLowerCase();
@@ -831,6 +702,7 @@ async function createPaymentApi(input: z.infer<typeof createPaymentInput>) {
         customerPhone: normalizedPhone,
         paymentMethod: "Pembayaran Online",
         paymentReference: paymentResult.data.reference,
+        paymentCheckoutUrl: paymentResult.data.checkout_url || null,
         paymentStatus: "pending",
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
         updatedAt: new Date(),
@@ -885,13 +757,15 @@ function trpcErrorStatus(code: TRPCError["code"]) {
   }
 }
 
-function parseAdminActionInput(value: string | undefined) {
-  if (!value) return undefined;
-  try {
-    return JSON.parse(decodeURIComponent(value)) as unknown;
-  } catch {
+function parseAdminActionInput(value: unknown) {
+  if (!value || typeof value !== "object") {
     throw new PublicApiError("Input admin tidak valid", 400);
   }
+  const record = value as { action?: unknown; input?: unknown };
+  if (typeof record.action !== "string" || !record.action) {
+    throw new PublicApiError("Aksi admin tidak valid", 400);
+  }
+  return { action: record.action, input: record.input };
 }
 
 async function runAdminAction(
