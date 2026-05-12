@@ -1,6 +1,7 @@
 import { products, transactions } from "@db/schema";
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { getDb } from "../queries/connection";
+import { writeAuditLog } from "./audit";
 import { checkPaymentStatus } from "./payment";
 import { checkTopupStatus, placeTopupOrder } from "./topup";
 
@@ -63,6 +64,23 @@ export async function fulfillPaidTransaction(
     return { success: false, referenceId, error: "Transaction is not retryable" };
   }
 
+  await writeAuditLog({
+    action: "transaction.topup_requested",
+    entityType: "transaction",
+    entityId: referenceId,
+    before: {
+      status: tx.status,
+      paymentStatus: tx.paymentStatus,
+      topupStatus: tx.topupStatus,
+    },
+    after: {
+      status: "processing",
+      paymentStatus: options.markPaymentPaid ? "paid" : tx.paymentStatus,
+      topupStatus: "processing",
+      providerCode: product.providerCode,
+    },
+  });
+
   const topupResult = await placeTopupOrder({
     providerCode: product.providerCode,
     userIdGame: tx.userIdGame,
@@ -86,6 +104,16 @@ export async function fulfillPaidTransaction(
           lastError: "Top-up failed",
         })
         .where(eq(transactions.referenceId, referenceId));
+      await writeAuditLog({
+        action: "transaction.topup_failed",
+        entityType: "transaction",
+        entityId: referenceId,
+        after: {
+          topupReference,
+          providerCode: product.providerCode,
+          response: topupResult.data,
+        },
+      });
       return { success: false, referenceId, error: "Top-up failed" };
     }
 
@@ -101,6 +129,16 @@ export async function fulfillPaidTransaction(
           lastError: null,
         })
         .where(eq(transactions.referenceId, referenceId));
+      await writeAuditLog({
+        action: "transaction.topup_processing",
+        entityType: "transaction",
+        entityId: referenceId,
+        after: {
+          topupReference,
+          providerCode: product.providerCode,
+          response: topupResult.data,
+        },
+      });
       return { success: true, referenceId, topupReference };
     }
 
@@ -116,6 +154,16 @@ export async function fulfillPaidTransaction(
         lastError: null,
       })
       .where(eq(transactions.referenceId, referenceId));
+    await writeAuditLog({
+      action: "transaction.topup_success",
+      entityType: "transaction",
+      entityId: referenceId,
+      after: {
+        topupReference,
+        providerCode: product.providerCode,
+        response: topupResult.data,
+      },
+    });
     return { success: true, referenceId, topupReference };
   }
 
@@ -131,6 +179,15 @@ export async function fulfillPaidTransaction(
       updatedAt: new Date(),
     })
     .where(eq(transactions.referenceId, referenceId));
+  await writeAuditLog({
+    action: "transaction.topup_failed",
+    entityType: "transaction",
+    entityId: referenceId,
+    after: {
+      providerCode: product.providerCode,
+      error: errorMessage,
+    },
+  });
 
   return { success: false, referenceId, error: errorMessage };
 }
@@ -147,6 +204,16 @@ export async function syncPaymentAndFulfill(referenceId: string) {
 
   const status = extractPaymentStatus(payment.data);
   if (status === "PAID") {
+    await writeAuditLog({
+      action: "transaction.payment_verified",
+      entityType: "transaction",
+      entityId: referenceId,
+      after: {
+        source: "status_sync",
+        providerReference,
+        providerResponse: payment.data,
+      },
+    });
     const result = await fulfillPaidTransaction(referenceId, { markPaymentPaid: true });
     if (!result.success) {
       return {

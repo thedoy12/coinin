@@ -23,6 +23,7 @@ import { hashPassword, verifyPassword } from "./lib/password";
 import { signSessionToken } from "./lib/session";
 import { appendClearSessionCookie, appendSessionCookie } from "./lib/cookies";
 import { publicSafeGameFilter, publicSafeProductFilter } from "./lib/catalog-safety";
+import { writeAuditLog } from "./lib/audit";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 const publicSiteUrl = "https://coinin.store";
@@ -189,6 +190,16 @@ app.post("/api/callback", async (c) => {
     }
 
     if (status === "PAID") {
+      await writeAuditLog({
+        action: "transaction.payment_verified",
+        entityType: "transaction",
+        entityId: referenceId,
+        after: {
+          source: "callback",
+          providerReference: notification?.providerReference || null,
+          status,
+        },
+      });
       await fulfillPaidTransaction(referenceId, { markPaymentPaid: true });
     } else if (status === "PENDING") {
       await db
@@ -198,6 +209,16 @@ app.post("/api/callback", async (c) => {
           updatedAt: new Date(),
         })
         .where(eq(transactions.referenceId, referenceId));
+      await writeAuditLog({
+        action: "transaction.payment_pending",
+        entityType: "transaction",
+        entityId: referenceId,
+        after: {
+          source: "callback",
+          providerReference: notification?.providerReference || null,
+          status,
+        },
+      });
     } else if (status === "EXPIRED" || status === "FAILED") {
       await db
         .update(transactions)
@@ -207,6 +228,16 @@ app.post("/api/callback", async (c) => {
           updatedAt: new Date(),
         })
         .where(eq(transactions.referenceId, referenceId));
+      await writeAuditLog({
+        action: status === "EXPIRED" ? "transaction.payment_expired" : "transaction.payment_failed",
+        entityType: "transaction",
+        entityId: referenceId,
+        after: {
+          source: "callback",
+          providerReference: notification?.providerReference || null,
+          status,
+        },
+      });
     }
 
     return c.json({ success: true });
@@ -712,6 +743,17 @@ async function createPaymentApi(input: z.infer<typeof createPaymentInput>) {
         updatedAt: new Date(),
       })
       .where(eq(transactions.referenceId, input.referenceId));
+    await writeAuditLog({
+      action: "transaction.payment_created",
+      entityType: "transaction",
+      entityId: input.referenceId,
+      after: {
+        paymentReference: paymentResult.data.reference,
+        checkoutUrl: paymentResult.data.checkout_url || null,
+        customerEmail: normalizedEmail,
+        customerPhone: normalizedPhone,
+      },
+    });
   }
 
   return paymentResult;
