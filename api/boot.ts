@@ -11,7 +11,7 @@ import { nanoid } from "nanoid";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
-import { getDb } from "./queries/connection";
+import { ensureRuntimeSchema, getDb } from "./queries/connection";
 import { games, products, transactions, users } from "@db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { createQrisPayment, parsePaymentNotification, verifyPaymentCallback } from "./lib/payment";
@@ -34,6 +34,10 @@ app.onError((error, c) => {
 
 app.use("/api/trpc/*", rateLimit({ windowMs: 60_000, max: 120, keyPrefix: "trpc" }));
 app.use("/api/status/*", rateLimit({ windowMs: 60_000, max: 60, keyPrefix: "status" }));
+app.use("/api/*", async (_c, next) => {
+  await ensureRuntimeSchema();
+  await next();
+});
 
 app.get("/robots.txt", (c) => c.text(`User-agent: *
 Allow: /
