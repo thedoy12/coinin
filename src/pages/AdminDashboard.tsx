@@ -150,7 +150,7 @@ export default function AdminDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  const enabled = !!user && user.role === "admin";
+  const enabled = !authLoading && !!user && user.role === "admin";
   const statsQuery = trpc.admin.stats.useQuery(undefined, { enabled });
   const transactionsQuery = trpc.admin.allTransactions.useQuery(
     { page: transactionPage, pageSize: PAGE_SIZE, search: transactionSearch },

@@ -23,7 +23,8 @@ export function useAuth(options?: UseAuthOptions) {
     error,
     refetch,
   } = trpc.auth.me.useQuery(undefined, {
-    staleTime: 1000 * 60 * 5,
+    staleTime: redirectOnUnauthenticated ? 0 : 1000 * 60 * 5,
+    refetchOnMount: redirectOnUnauthenticated ? "always" : false,
     retry: false,
   });
 
