@@ -144,10 +144,10 @@ export default function Checkout() {
             <CardTitle className="text-white text-base">Detail Transaksi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between text-sm">
+            <div className="grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:items-start sm:gap-3">
               <span className="text-slate-400">Reference ID</span>
-              <div className="flex items-center gap-2">
-                <span className="text-white font-mono">{transaction.referenceId}</span>
+              <div className="flex min-w-0 items-center gap-2 sm:justify-end">
+                <span className="break-all font-mono text-white">{transaction.referenceId}</span>
                 <button
                   onClick={() => handleCopy(transaction.referenceId)}
                   className="text-slate-500 hover:text-amber-400 transition-colors"
@@ -156,21 +156,21 @@ export default function Checkout() {
                 </button>
               </div>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:items-start sm:gap-3">
               <span className="text-slate-400">Game</span>
-              <span className="text-white">{transaction.gameName}</span>
+              <span className="break-words text-white sm:text-right">{transaction.gameName}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:items-start sm:gap-3">
               <span className="text-slate-400">Produk</span>
-              <span className="text-white">{transaction.productName}</span>
+              <span className="break-words text-white sm:text-right">{transaction.productName}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:items-start sm:gap-3">
               <span className="text-slate-400">{targetCopy.label}</span>
-              <span className="text-white">{transaction.userIdGame}</span>
+              <span className="break-all text-white sm:text-right">{transaction.userIdGame}</span>
             </div>
-            <div className="border-t border-slate-800 pt-3 flex justify-between">
+            <div className="flex justify-between gap-3 border-t border-slate-800 pt-3">
               <span className="text-slate-400">Total Pembayaran</span>
-              <span className="text-amber-400 font-bold text-lg">
+              <span className="text-right text-lg font-bold text-amber-400">
                 Rp {transaction.price.toLocaleString("id-ID")}
               </span>
             </div>
@@ -183,32 +183,32 @@ export default function Checkout() {
             <CardTitle className="text-white text-base">Status Pembayaran</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-              <div
-                className={`w-3 h-3 rounded-full ${
-                  isCompleted
-                    ? "bg-green-500"
-                    : transaction.paymentStatus === "failed" || isExpired || isTopupFailed
-                    ? "bg-red-500"
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div
+                  className={`h-3 w-3 flex-shrink-0 rounded-full ${
+                    isCompleted
+                      ? "bg-green-500"
+                      : transaction.paymentStatus === "failed" || isExpired || isTopupFailed
+                      ? "bg-red-500"
+                      : isPaymentPaid
+                      ? "animate-pulse bg-blue-500"
+                      : "animate-pulse bg-amber-500"
+                  }`}
+                />
+                <span className="break-words font-medium capitalize text-white">
+                  {isCompleted
+                    ? "Top-up Berhasil"
+                    : isTopupFailed
+                    ? "Top-up Gagal"
                     : isPaymentPaid
-                    ? "bg-blue-500 animate-pulse"
-                    : "bg-amber-500 animate-pulse"
-                }`}
-              />
-              <span className="text-white font-medium capitalize">
-                {isCompleted
-                  ? "Top-up Berhasil"
-                  : isTopupFailed
-                  ? "Top-up Gagal"
-                  : isPaymentPaid
-                  ? "Pembayaran Berhasil, Top-up Diproses"
-                  : isExpired
-                  ? "Transaksi Kadaluarsa"
-                  : transaction.paymentStatus === "unpaid"
-                  ? "Menunggu Pembayaran"
-                  : transaction.paymentStatus}
-              </span>
+                    ? "Pembayaran Berhasil, Top-up Diproses"
+                    : isExpired
+                    ? "Transaksi Kadaluarsa"
+                    : transaction.paymentStatus === "unpaid"
+                    ? "Menunggu Pembayaran"
+                    : transaction.paymentStatus}
+                </span>
               </div>
               {!isCompleted && !isExpired && !isTopupFailed && (
                 <span className="border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">

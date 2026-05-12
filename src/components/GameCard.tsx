@@ -15,9 +15,9 @@ type GameCardProps = {
 export function GameCard({ game }: GameCardProps) {
   return (
     <Link to={`/game/${game.slug}`} className="group">
-      <Card className="cyber-panel game-card-cyber overflow-hidden transition-transform group-hover:-translate-y-2">
+      <Card className="cyber-panel game-card-cyber overflow-hidden transition-transform group-hover:-translate-y-1">
         <CardContent className="p-0">
-          <div className="relative h-52">
+          <div className="relative aspect-[4/5] min-h-40 sm:min-h-48">
             {game.thumbnail ? (
               <div className="game-card-art absolute inset-0 flex items-center justify-center">
                 <img

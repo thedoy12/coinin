@@ -142,7 +142,7 @@ export default function Home() {
         </Dialog>
       )}
 
-      <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="mx-auto mt-4 max-w-7xl px-4 sm:mt-6 sm:px-6 lg:px-8">
         <div className="hud-frame overflow-hidden border border-cyan-300/15 bg-slate-950/75 px-4 py-3">
           <div className="marquee-track">
             {[...liveFeed, ...liveFeed].map((item, index) => (
@@ -155,8 +155,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-        <div className="hud-frame cinematic-stage cyber-hero-shell min-h-[560px] overflow-hidden bg-slate-950 p-5 sm:p-8 lg:p-10">
+      <section className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+        <div className="hud-frame cinematic-stage cyber-hero-shell overflow-hidden bg-slate-950 p-4 sm:p-7 lg:p-9">
           <div className="hero-violet-aura" />
           <div className="hero-energy-ring hidden lg:block" />
           <div className="hero-energy-beam hidden lg:block" />
@@ -165,26 +165,26 @@ export default function Home() {
           <div className="cyber-slice cyber-slice-one hidden xl:block" />
           <div className="cyber-slice cyber-slice-two hidden xl:block" />
           <div className="cyber-slice cyber-slice-three hidden xl:block" />
-          <div className="relative z-10 flex min-h-[500px] flex-col">
-            <div className="flex items-center justify-between text-xs font-black uppercase tracking-[0.28em] text-cyan-100/80">
+          <div className="relative z-10 flex flex-col">
+            <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase text-cyan-100/80 sm:text-xs">
               <span>CoinIn Arcade</span>
               <span className="hidden sm:inline">QRIS // VA // E-Wallet // 24H</span>
             </div>
 
-            <div className="grid flex-1 items-center gap-8 lg:grid-cols-[1fr_410px]">
+            <div className="grid items-center gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:py-10">
               <div className="max-w-3xl">
-                <div className="mb-5 inline-flex items-center gap-2 border border-violet-300/40 bg-violet-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-violet-100 shadow-[0_0_28px_rgba(168,85,247,0.18)]">
+                <div className="mb-5 inline-flex items-center gap-2 border border-violet-300/40 bg-violet-400/10 px-3 py-2 text-[10px] font-black uppercase text-violet-100 shadow-[0_0_28px_rgba(168,85,247,0.18)] sm:px-4 sm:text-xs">
                   <Sparkles className="h-4 w-4 text-violet-200" />
                   Top Up Game, Pulsa, Token PLN
                 </div>
-                <h1 className="section-title-gaming text-5xl font-black uppercase italic leading-[0.92] text-white sm:text-6xl lg:text-8xl">
+                <h1 className="section-title-gaming text-4xl font-black uppercase italic leading-none text-white sm:text-6xl lg:text-7xl">
                   Top Up
                   <span className="block bg-gradient-to-r from-cyan-200 via-white via-45% to-violet-300 bg-clip-text text-transparent">
                     Game Cepat
                   </span>
                 </h1>
                 <div className="cyber-title-underline mt-5" />
-                <p className="mt-6 max-w-2xl text-base font-semibold leading-8 text-slate-200 sm:text-lg">
+                <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-slate-200 sm:text-base">
                   Pilih game favorit, bayar pakai QRIS/VA/e-wallet, lalu pantau status order secara real-time. Cepat, jelas, dan siap dipakai di device mana pun.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -224,7 +224,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="mt-10 grid max-w-2xl grid-cols-3 gap-3">
+                <div className="mt-8 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
                   {[
                     ["24/7", "online"],
                     ["QRIS", "payment"],
@@ -232,7 +232,7 @@ export default function Home() {
                   ].map(([value, label]) => (
                     <div key={value} className="cyber-stat-card angle-card border border-cyan-300/25 bg-slate-950/70 p-4">
                       <p className="text-2xl font-black text-white">{value}</p>
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200/70">{label}</p>
+                      <p className="text-[10px] font-black uppercase text-cyan-200/70">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -247,7 +247,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative hidden min-h-[390px] lg:block">
+              <div className="relative hidden min-h-[360px] lg:block">
                 {operatorGames.map((game, index) => (
                   <Link
                     key={game.id}

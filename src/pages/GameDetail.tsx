@@ -181,7 +181,7 @@ export default function GameDetail() {
   const visibleProducts = productTabs.find((tab) => tab.value === visibleProductTab)?.products ?? products ?? [];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <Link to="/">
         <Button variant="ghost" size="sm" className="mb-4 rounded-none text-slate-400 hover:text-white hover:bg-cyan-300/10">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -190,61 +190,62 @@ export default function GameDetail() {
       </Link>
 
       {/* Game Header */}
-      <div className="hud-frame relative mb-8 overflow-hidden border border-cyan-300/20 bg-slate-950/80 p-5">
-        <div className="absolute right-6 top-5 coin-float text-cyan-200">
+      <div className="hud-frame relative mb-8 overflow-hidden border border-cyan-300/20 bg-slate-950/80 p-4 sm:p-5">
+        <div className="absolute right-5 top-5 hidden text-cyan-200 sm:block">
           <Coins className="h-8 w-8" />
         </div>
-        <div className="flex items-start gap-6">
-        <div className="angle-card w-24 h-24 sm:w-32 sm:h-32 bg-slate-800 overflow-hidden flex-shrink-0 shadow-lg shadow-cyan-500/10">
-          {game.thumbnail ? (
-            <img
-              src={game.thumbnail}
-              alt={game.name}
-              className="w-full h-full object-cover"
-              loading="eager"
-              decoding="async"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Gamepad2 className="w-12 h-12 text-slate-600" />
-            </div>
-          )}
-        </div>
-        <div>
-          <Badge className="mb-2 bg-cyan-300/10 text-cyan-100 border-cyan-300/30">
-            {game.category}
-          </Badge>
-          <h1 className="section-title-gaming text-3xl font-black uppercase italic text-white mb-2">{game.name}</h1>
-          <p className="text-slate-400">
-            {game.instructions || targetCopy.instructions}
-          </p>
-        </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+          <div className="angle-card h-24 w-24 flex-shrink-0 overflow-hidden bg-slate-800 shadow-lg shadow-cyan-500/10 sm:h-32 sm:w-32">
+            {game.thumbnail ? (
+              <img
+                src={game.thumbnail}
+                alt={game.name}
+                className="h-full w-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Gamepad2 className="h-12 w-12 text-slate-600" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <Badge className="mb-2 border-cyan-300/30 bg-cyan-300/10 text-cyan-100">
+              {game.category}
+            </Badge>
+            <h1 className="section-title-gaming mb-2 break-words text-2xl font-black uppercase italic text-white sm:text-3xl">
+              {game.name}
+            </h1>
+            <p className="max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+              {game.instructions || targetCopy.instructions}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Products */}
-        <div className="lg:col-span-2">
-          <h2 className="section-title-gaming text-xl font-black uppercase italic text-slate-100 mb-4">Pilih Nominal</h2>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0">
+          <h2 className="section-title-gaming mb-4 text-xl font-black uppercase italic text-slate-100">Pilih Nominal</h2>
           {productsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl bg-slate-800" />
+                <Skeleton key={i} className="h-24 bg-slate-800" />
               ))}
             </div>
           ) : products && products.length > 0 ? (
             <div className="space-y-5">
               {productTabs.length > 1 && (
-                <div className="flex flex-wrap justify-center gap-3 rounded-none border border-cyan-300/10 bg-[#102f57]/80 px-4 py-5 sm:gap-4 sm:px-6">
+                <div className="grid grid-cols-1 gap-2 border border-cyan-300/10 bg-slate-950/70 p-2 sm:grid-cols-3">
                   {productTabs.map((tab) => (
                     <button
                       key={tab.value}
                       type="button"
                       onClick={() => setActiveProductTab(tab.value)}
-                      className={`min-h-12 min-w-36 rounded-full px-7 text-sm font-black transition-colors sm:min-w-44 sm:text-base ${
+                      className={`min-h-11 px-4 text-sm font-black uppercase transition-colors ${
                         visibleProductTab === tab.value
-                          ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
-                          : "bg-slate-200 text-slate-950 hover:bg-white"
+                          ? "bg-cyan-300 text-slate-950"
+                          : "bg-slate-900 text-slate-300 hover:bg-slate-800"
                       }`}
                     >
                       {tab.label}
@@ -260,8 +261,8 @@ export default function GameDetail() {
         </div>
 
         {/* Order Form */}
-        <div>
-          <Card className="hud-frame bg-slate-950/80 border-cyan-300/20 sticky top-20 rounded-none">
+        <div className="min-w-0">
+          <Card className="hud-frame sticky top-20 rounded-none border-cyan-300/20 bg-slate-950/80">
             <CardHeader>
               <CardTitle className="text-white text-lg">Form Top Up</CardTitle>
             </CardHeader>
@@ -286,37 +287,37 @@ export default function GameDetail() {
               </div>
 
               {targetCopy.showZone && (
-              <div>
-                <Label className="text-slate-300 mb-1.5 block">
-                  <div className="flex items-center gap-2">
-                    <Hash className="w-4 h-4" />
-                    Zone ID / Server
-                  </div>
-                </Label>
-                <Input
-                  placeholder={game.requiresZoneId ? "Masukkan Zone ID / Server" : "Contoh: 1234 (opsional)"}
-                  value={zoneId}
-                  onChange={(e) => setZoneId(e.target.value)}
-                  autoComplete="off"
-                  className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-amber-500/50"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  {game.requiresZoneId ? "Wajib diisi untuk game ini" : "Diperlukan untuk beberapa game seperti MLBB"}
-                </p>
-              </div>
+                <div>
+                  <Label className="mb-1.5 block text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-4 w-4" />
+                      Zone ID / Server
+                    </div>
+                  </Label>
+                  <Input
+                    placeholder={game.requiresZoneId ? "Masukkan Zone ID / Server" : "Contoh: 1234 (opsional)"}
+                    value={zoneId}
+                    onChange={(e) => setZoneId(e.target.value)}
+                    autoComplete="off"
+                    className="border-slate-700 bg-slate-950 text-white placeholder:text-slate-600 focus-visible:ring-amber-500/50"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    {game.requiresZoneId ? "Wajib diisi untuk game ini" : "Diperlukan untuk beberapa game seperti MLBB"}
+                  </p>
+                </div>
               )}
 
               {selectedProduct && products && (
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="flex justify-between text-sm mb-1">
+                <div className="border border-slate-800 bg-slate-950 p-3">
+                  <div className="mb-2 grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:items-start sm:gap-3">
                     <span className="text-slate-400">Produk</span>
-                    <span className="text-white">
+                    <span className="break-words text-left font-medium text-white sm:text-right">
                       {products.find((p) => p.id === selectedProduct)?.name}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between gap-3 text-sm">
                     <span className="text-slate-400">Total</span>
-                    <span className="text-amber-400 font-bold">
+                    <span className="font-bold text-amber-400">
                       Rp{" "}
                       {products
                         .find((p) => p.id === selectedProduct)
@@ -364,20 +365,20 @@ function ProductGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
       {products.map((product) => (
         <button
           key={product.id}
           onClick={() => onSelect(product.id)}
-          className={`angle-card text-left p-4 border hover-lift transition-all duration-200 ${
+          className={`angle-card min-h-28 border p-4 text-left transition-colors ${
             selectedProduct === product.id
               ? "border-cyan-300 bg-cyan-300/15 shadow-lg shadow-cyan-500/10"
               : "border-slate-700 bg-slate-950/70 hover:border-cyan-300/50"
           }`}
         >
           <Sparkles className={`mb-2 h-4 w-4 ${selectedProduct === product.id ? "text-cyan-200" : "text-slate-600"}`} />
-          <p className="font-semibold text-white mb-1">{product.name}</p>
-          <p className="text-cyan-200 font-bold">
+          <p className="mb-2 line-clamp-2 text-sm font-semibold leading-5 text-white">{product.name}</p>
+          <p className="text-sm font-bold text-cyan-200">
             Rp {product.priceSell.toLocaleString("id-ID")}
           </p>
         </button>
