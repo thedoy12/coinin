@@ -308,13 +308,13 @@ export default function Home() {
           </a>
         </div>
         {isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-52 bg-slate-800" />
+              <Skeleton key={index} className="h-40 bg-slate-800 sm:h-52" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
             {quickGames.map((game) => (
               <GameCard key={game.id} game={game} />
             ))}
@@ -347,11 +347,11 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
           {featuredGames.map((game, index) => (
             <Link key={game.id} to={`/game/${game.slug}`} className="group">
-              <article className={`cyber-panel min-h-64 overflow-hidden transition-transform group-hover:-translate-y-2 ${index === 1 ? "sm:mt-8" : ""}`}>
-                <div className="relative h-64">
+              <article className={`cyber-panel min-h-44 overflow-hidden transition-transform group-hover:-translate-y-2 sm:min-h-64 ${index === 1 ? "sm:mt-8" : ""}`}>
+                <div className="relative h-44 sm:h-64">
                   {game.thumbnail ? (
                     <img
                       src={game.thumbnail}
@@ -366,11 +366,11 @@ export default function Home() {
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <span className="bg-gradient-to-r from-cyan-300 to-violet-300 px-3 py-1 text-[10px] font-black uppercase text-slate-950">
-                      Top {index + 1}
-                    </span>
-                    <h3 className="mt-3 text-lg font-black uppercase italic text-white">{game.name}</h3>
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                      <span className="bg-gradient-to-r from-cyan-300 to-violet-300 px-3 py-1 text-[10px] font-black uppercase text-slate-950">
+                        Top {index + 1}
+                      </span>
+                    <h3 className="mt-2 text-base font-black uppercase italic text-white sm:mt-3 sm:text-lg">{game.name}</h3>
                   </div>
                 </div>
               </article>
@@ -439,13 +439,13 @@ export default function Home() {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton key={index} className="h-52 bg-slate-800" />
+              <Skeleton key={index} className="h-40 bg-slate-800 sm:h-52" />
             ))}
           </div>
         ) : filteredGames && filteredGames.length > 0 ? (
-          <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {filteredGames.map((game) => (
               <GameCard key={game.id} game={game} />
             ))}

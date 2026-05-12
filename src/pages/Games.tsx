@@ -91,13 +91,13 @@ export default function Games() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {Array.from({ length: 18 }).map((_, index) => (
-            <Skeleton key={index} className="h-52 bg-slate-800" />
+            <Skeleton key={index} className="h-40 bg-slate-800 sm:h-52" />
           ))}
         </div>
       ) : filteredGames && filteredGames.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {filteredGames.map((game) => (
             <GameCard key={game.id} game={game} />
           ))}
