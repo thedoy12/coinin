@@ -276,7 +276,7 @@ function extractTopupReference(data: unknown) {
   return typeof ref === "string" ? ref : null;
 }
 
-function extractPaymentStatus(data: unknown) {
+export function extractPaymentStatus(data: unknown) {
   if (typeof data !== "object" || data === null) return "";
   const root = data as { status?: unknown; transaction_status?: unknown; fraud_status?: unknown; message?: unknown };
   if (typeof root.transaction_status === "string") {
@@ -294,10 +294,10 @@ function extractPaymentStatus(data: unknown) {
   if (typeof root.status === "string") return root.status.toUpperCase();
   if (typeof root.message === "string") {
     const message = root.message.toUpperCase();
+    if (message.includes("PENDING") || message.includes("UNPAID")) return "PENDING";
     if (message.includes("PAID")) return "PAID";
     if (message.includes("EXPIRED")) return "EXPIRED";
     if (message.includes("FAILED") || message.includes("GAGAL")) return "FAILED";
-    if (message.includes("PENDING") || message.includes("UNPAID")) return "PENDING";
   }
   return "";
 }
