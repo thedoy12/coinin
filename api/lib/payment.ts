@@ -1,4 +1,6 @@
 import axios from "axios";
+import http from "node:http";
+import https from "node:https";
 import { createHmac, timingSafeEqual } from "crypto";
 import { env } from "./env";
 import { writeProviderApiLog } from "./provider-api-log";
@@ -10,6 +12,9 @@ const paymentApi = axios.create({
     "Content-Type": "application/json",
     Authorization: `Bearer ${env.paymentApiKey}`,
   },
+  httpAgent: new http.Agent({ family: 4 }),
+  httpsAgent: new https.Agent({ family: 4 }),
+  timeout: 20_000,
   validateStatus: (status) => status < 500,
 });
 
