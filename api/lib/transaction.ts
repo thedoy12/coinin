@@ -10,7 +10,7 @@ type FulfillResult =
 
 export async function fulfillPaidTransaction(
   referenceId: string,
-  options: { force?: boolean } = {},
+  options: { force?: boolean; markPaymentPaid?: boolean } = {},
 ): Promise<FulfillResult> {
   const db = getDb();
   const result = await db
@@ -34,11 +34,14 @@ export async function fulfillPaidTransaction(
   if (options.force && tx.paymentStatus !== "paid") {
     return { success: false, referenceId, error: "Payment is not paid yet" };
   }
+  if (!options.force && !options.markPaymentPaid && tx.paymentStatus !== "paid") {
+    return { success: false, referenceId, error: "Payment has not been verified as paid" };
+  }
 
   const locked = await db
     .update(transactions)
     .set({
-      paymentStatus: "paid",
+      paymentStatus: options.markPaymentPaid ? "paid" : tx.paymentStatus,
       status: "processing",
       topupStatus: "processing",
       paidAt: tx.paidAt ?? new Date(),
@@ -144,7 +147,7 @@ export async function syncPaymentAndFulfill(referenceId: string) {
 
   const status = extractPaymentStatus(payment.data);
   if (status === "PAID") {
-    const result = await fulfillPaidTransaction(referenceId);
+    const result = await fulfillPaidTransaction(referenceId, { markPaymentPaid: true });
     if (!result.success) {
       return {
         success: false,

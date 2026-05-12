@@ -189,7 +189,7 @@ app.post("/api/callback", async (c) => {
     }
 
     if (status === "PAID") {
-      await fulfillPaidTransaction(referenceId);
+      await fulfillPaidTransaction(referenceId, { markPaymentPaid: true });
     } else if (status === "PENDING") {
       await db
         .update(transactions)
