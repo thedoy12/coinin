@@ -107,6 +107,8 @@ const adminTabs: Array<{ value: AdminTab; label: string }> = [
   { value: "system", label: "Sistem" },
 ];
 
+const PAGE_SIZE = 25;
+
 export default function AdminDashboard() {
   useSEO({
     title: "Owner Console | CoinIn",
@@ -127,6 +129,13 @@ export default function AdminDashboard() {
   const [productSearch, setProductSearch] = useState("");
   const [apiLogSearch, setApiLogSearch] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [customerPage, setCustomerPage] = useState(1);
+  const [accountPage, setAccountPage] = useState(1);
+  const [gamePage, setGamePage] = useState(1);
+  const [productPage, setProductPage] = useState(1);
+  const [auditPage, setAuditPage] = useState(1);
+  const [apiLogPage, setApiLogPage] = useState(1);
   const [cleanupForm, setCleanupForm] = useState({
     target: "staleTransactions" as CleanupTarget,
     olderThanDays: "30",
@@ -409,6 +418,14 @@ export default function AdminDashboard() {
     );
   }, [apiLogSearch, providerApiLogsQuery.data]);
 
+  useEffect(() => setTransactionPage(1), [transactionSearch, filteredTransactions.length]);
+  useEffect(() => setCustomerPage(1), [customersQuery.data?.length]);
+  useEffect(() => setAccountPage(1), [usersQuery.data?.length]);
+  useEffect(() => setGamePage(1), [gamesQuery.data?.length]);
+  useEffect(() => setProductPage(1), [productSearch, filteredCatalog.length]);
+  useEffect(() => setAuditPage(1), [auditQuery.data?.length]);
+  useEffect(() => setApiLogPage(1), [apiLogSearch, filteredApiLogs.length]);
+
   if (authLoading || statsQuery.isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
@@ -441,6 +458,13 @@ export default function AdminDashboard() {
   const games = gamesQuery.data ?? [];
   const auditLogs = auditQuery.data ?? [];
   const providerApiLogs = providerApiLogsQuery.data ?? [];
+  const pagedTransactions = paginateRows(filteredTransactions, transactionPage, PAGE_SIZE);
+  const pagedCustomers = paginateRows(customers, customerPage, PAGE_SIZE);
+  const pagedAccounts = paginateRows(accounts, accountPage, PAGE_SIZE);
+  const pagedGames = paginateRows(games, gamePage, PAGE_SIZE);
+  const pagedCatalog = paginateRows(filteredCatalog, productPage, PAGE_SIZE);
+  const pagedAuditLogs = paginateRows(auditLogs, auditPage, PAGE_SIZE);
+  const pagedApiLogs = paginateRows(filteredApiLogs, apiLogPage, PAGE_SIZE);
 
   const createProductSubmit = () => {
     if (!productForm.gameId || !productForm.name || !productForm.providerCode) {
@@ -667,12 +691,13 @@ export default function AdminDashboard() {
                 className="max-w-xl bg-slate-950 border-slate-700 text-white"
               />
               <TransactionTable
-                rows={filteredTransactions}
+                rows={pagedTransactions.rows}
                 onSync={(referenceId) => syncPayment.mutate({ referenceId })}
                 onRetry={(referenceId) => retryTopup.mutate({ referenceId })}
                 onStatus={(referenceId, status) => updateStatus.mutate({ referenceId, status })}
                 showCustomer
               />
+              <PaginationControls page={transactionPage} totalPages={pagedTransactions.totalPages} totalRows={filteredTransactions.length} onPageChange={setTransactionPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -688,7 +713,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:hidden">
-                {customers.map((customer, index) => (
+                {pagedCustomers.rows.map((customer, index) => (
                   <div key={`${customer.customerEmail}-${customer.customerPhone}-${index}`} className="rounded-md border border-slate-800 bg-slate-950 p-4">
                     <p className="font-bold text-white">{customer.customerName || "Pembeli"}</p>
                     <p className="mt-1 break-all text-sm text-slate-400">{customer.customerEmail || "-"}</p>
@@ -700,7 +725,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {!customers.length && <p className="py-6 text-center text-slate-500">Belum ada pembeli</p>}
+                {!pagedCustomers.rows.length && <p className="py-6 text-center text-slate-500">Belum ada pembeli</p>}
               </div>
               <div className="hidden overflow-x-auto md:block">
                 <Table>
@@ -715,7 +740,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {customers.map((customer, index) => (
+                    {pagedCustomers.rows.map((customer, index) => (
                       <TableRow key={`${customer.customerEmail}-${customer.customerPhone}-${index}`} className="border-slate-800">
                         <TableCell className="text-white">{customer.customerName || "-"}</TableCell>
                         <TableCell className="text-slate-300">{customer.customerEmail || "-"}</TableCell>
@@ -728,6 +753,7 @@ export default function AdminDashboard() {
                   </TableBody>
                 </Table>
               </div>
+              <PaginationControls page={customerPage} totalPages={pagedCustomers.totalPages} totalRows={customers.length} onPageChange={setCustomerPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -743,10 +769,11 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <UserTable
-                rows={accounts}
+                rows={pagedAccounts.rows}
                 onRole={(userId, role) => updateUserRole.mutate({ userId, role })}
                 onResetPassword={(userId, password) => resetUserPassword.mutate({ userId, password })}
               />
+              <PaginationControls page={accountPage} totalPages={pagedAccounts.totalPages} totalRows={accounts.length} onPageChange={setAccountPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -787,7 +814,7 @@ export default function AdminDashboard() {
             <CardHeader><CardTitle className="text-white">Daftar Game</CardTitle></CardHeader>
             <CardContent>
               <div className="grid gap-3 md:hidden">
-                {games.map((game) => (
+                {pagedGames.rows.map((game) => (
                   <div key={game.id} className="rounded-md border border-slate-800 bg-slate-950 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -807,7 +834,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {!games.length && <p className="py-6 text-center text-slate-500">Belum ada game</p>}
+                {!pagedGames.rows.length && <p className="py-6 text-center text-slate-500">Belum ada game</p>}
               </div>
               <div className="hidden overflow-x-auto md:block">
                 <Table>
@@ -821,7 +848,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {games.map((game) => (
+                    {pagedGames.rows.map((game) => (
                       <TableRow key={game.id} className="border-slate-800">
                         <TableCell className="text-white">{game.name}</TableCell>
                         <TableCell className="font-mono text-xs text-slate-400">{game.slug}</TableCell>
@@ -841,6 +868,7 @@ export default function AdminDashboard() {
                   </TableBody>
                 </Table>
               </div>
+              <PaginationControls page={gamePage} totalPages={pagedGames.totalPages} totalRows={games.length} onPageChange={setGamePage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -924,7 +952,8 @@ export default function AdminDashboard() {
                 placeholder="Cari game, produk, provider code, status..."
                 className="max-w-xl bg-slate-950 border-slate-700 text-white"
               />
-              <ProductTable rows={filteredCatalog} onUpdate={updateProduct.mutate} />
+              <ProductTable rows={pagedCatalog.rows} onUpdate={updateProduct.mutate} />
+              <PaginationControls page={productPage} totalPages={pagedCatalog.totalPages} totalRows={filteredCatalog.length} onPageChange={setProductPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -1056,7 +1085,7 @@ export default function AdminDashboard() {
           <Card className="bg-slate-900/50 border-slate-800">
             <CardHeader><CardTitle className="text-white">Audit Log</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              {auditLogs.map((log) => (
+              {pagedAuditLogs.rows.map((log) => (
                 <div key={log.id} className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm">
                   <div>
                     <p className="text-white">{log.action}</p>
@@ -1065,7 +1094,8 @@ export default function AdminDashboard() {
                   <span className="text-xs text-slate-500">{formatDate(log.createdAt)}</span>
                 </div>
               ))}
-              {!auditLogs.length && <p className="text-center text-slate-500 py-6">Belum ada audit log</p>}
+              {!pagedAuditLogs.rows.length && <p className="text-center text-slate-500 py-6">Belum ada audit log</p>}
+              <PaginationControls page={auditPage} totalPages={pagedAuditLogs.totalPages} totalRows={auditLogs.length} onPageChange={setAuditPage} />
             </CardContent>
           </Card>
 
@@ -1087,7 +1117,8 @@ export default function AdminDashboard() {
                 placeholder="Cari provider, reference, endpoint, status..."
                 className="max-w-xl bg-slate-950 border-slate-700 text-white"
               />
-              <ProviderApiLogTable rows={filteredApiLogs} />
+              <ProviderApiLogTable rows={pagedApiLogs.rows} />
+              <PaginationControls page={apiLogPage} totalPages={pagedApiLogs.totalPages} totalRows={filteredApiLogs.length} onPageChange={setApiLogPage} />
             </CardContent>
           </Card>
 
@@ -1899,6 +1930,64 @@ function formatJsonText(value: string | null) {
   } catch {
     return value;
   }
+}
+
+function paginateRows<T>(rows: T[], page: number, pageSize: number) {
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    rows: rows.slice(start, start + pageSize),
+    totalPages,
+  };
+}
+
+function PaginationControls({
+  page,
+  totalPages,
+  totalRows,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalRows: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalRows <= PAGE_SIZE) return null;
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const start = (safePage - 1) * PAGE_SIZE + 1;
+  const end = Math.min(safePage * PAGE_SIZE, totalRows);
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-slate-800 pt-4 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <span>
+        Menampilkan {start}-{end} dari {totalRows}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-slate-700 text-slate-300"
+          disabled={safePage <= 1}
+          onClick={() => onPageChange(safePage - 1)}
+        >
+          Sebelumnya
+        </Button>
+        <span className="min-w-20 text-center text-xs font-semibold text-slate-500">
+          {safePage}/{totalPages}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-slate-700 text-slate-300"
+          disabled={safePage >= totalPages}
+          onClick={() => onPageChange(safePage + 1)}
+        >
+          Berikutnya
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 type ProductImportRow = {
