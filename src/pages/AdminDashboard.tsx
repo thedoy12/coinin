@@ -152,13 +152,38 @@ export default function AdminDashboard() {
 
   const enabled = !!user && user.role === "admin";
   const statsQuery = trpc.admin.stats.useQuery(undefined, { enabled });
-  const transactionsQuery = trpc.admin.allTransactions.useQuery(undefined, { enabled: enabled && ["overview", "transactions"].includes(activeTab) });
-  const customersQuery = trpc.admin.customers.useQuery(undefined, { enabled: enabled && ["overview", "customers"].includes(activeTab) });
-  const usersQuery = trpc.admin.users.useQuery(undefined, { enabled: enabled && ["overview", "accounts"].includes(activeTab) });
-  const catalogQuery = trpc.admin.catalog.useQuery(undefined, { enabled: enabled && activeTab === "products" });
-  const gamesQuery = trpc.admin.games.useQuery(undefined, { enabled: enabled && ["games", "products"].includes(activeTab) });
-  const auditQuery = trpc.admin.auditLogs.useQuery(undefined, { enabled: enabled && activeTab === "system" });
-  const providerApiLogsQuery = trpc.admin.providerApiLogs.useQuery(undefined, { enabled: enabled && activeTab === "system" });
+  const transactionsQuery = trpc.admin.allTransactions.useQuery(
+    { page: transactionPage, pageSize: PAGE_SIZE, search: transactionSearch },
+    { enabled: enabled && ["overview", "transactions"].includes(activeTab) }
+  );
+  const customersQuery = trpc.admin.customers.useQuery(
+    { page: customerPage, pageSize: PAGE_SIZE },
+    { enabled: enabled && ["overview", "customers"].includes(activeTab) }
+  );
+  const usersQuery = trpc.admin.users.useQuery(
+    { page: accountPage, pageSize: PAGE_SIZE },
+    { enabled: enabled && ["overview", "accounts"].includes(activeTab) }
+  );
+  const catalogQuery = trpc.admin.catalog.useQuery(
+    { page: productPage, pageSize: PAGE_SIZE, search: productSearch },
+    { enabled: enabled && activeTab === "products" }
+  );
+  const gamesQuery = trpc.admin.games.useQuery(
+    { page: gamePage, pageSize: PAGE_SIZE },
+    { enabled: enabled && ["games", "products"].includes(activeTab) }
+  );
+  const gameOptionsQuery = trpc.admin.games.useQuery(
+    { page: 1, pageSize: 500 },
+    { enabled: enabled && activeTab === "products" }
+  );
+  const auditQuery = trpc.admin.auditLogs.useQuery(
+    { page: auditPage, pageSize: PAGE_SIZE },
+    { enabled: enabled && activeTab === "system" }
+  );
+  const providerApiLogsQuery = trpc.admin.providerApiLogs.useQuery(
+    { page: apiLogPage, pageSize: PAGE_SIZE, search: apiLogSearch },
+    { enabled: enabled && activeTab === "system" }
+  );
   const popupSettingsQuery = trpc.admin.popupSettings.useQuery(undefined, {
     enabled: enabled && activeTab === "popup",
     refetchOnWindowFocus: false,
@@ -360,71 +385,18 @@ export default function AdminDashboard() {
   });
 
   const totals = useMemo(() => {
-    const txs = transactionsQuery.data ?? [];
+    const txs = transactionsQuery.data?.rows ?? [];
     return {
       unpaid: txs.filter((tx) => tx.paymentStatus === "unpaid").length,
       failedTopup: txs.filter((tx) => tx.topupStatus === "failed").length,
-      customers: customersQuery.data?.length ?? 0,
-      accounts: usersQuery.data?.length ?? 0,
+      customers: customersQuery.data?.total ?? 0,
+      accounts: usersQuery.data?.total ?? 0,
     };
   }, [customersQuery.data, transactionsQuery.data, usersQuery.data]);
 
-  const filteredTransactions = useMemo(() => {
-    const keyword = transactionSearch.trim().toLowerCase();
-    if (!keyword) return transactionsQuery.data ?? [];
-    return (transactionsQuery.data ?? []).filter((tx) =>
-      [
-        tx.referenceId,
-        tx.gameName,
-        tx.productName,
-        tx.customerName,
-        tx.customerEmail,
-        tx.customerPhone,
-        tx.paymentStatus,
-        tx.status,
-        tx.topupStatus,
-      ].some((value) => String(value ?? "").toLowerCase().includes(keyword))
-    );
-  }, [transactionSearch, transactionsQuery.data]);
-
-  const filteredCatalog = useMemo(() => {
-    const keyword = productSearch.trim().toLowerCase();
-    if (!keyword) return catalogQuery.data ?? [];
-    return (catalogQuery.data ?? []).filter((product) =>
-      [
-        product.gameName,
-        product.name,
-        product.providerCode,
-        product.productType,
-        product.gameSlug,
-        product.isActive ? "aktif" : "nonaktif",
-      ].some((value) => String(value ?? "").toLowerCase().includes(keyword))
-    );
-  }, [catalogQuery.data, productSearch]);
-
-  const filteredApiLogs = useMemo(() => {
-    const keyword = apiLogSearch.trim().toLowerCase();
-    if (!keyword) return providerApiLogsQuery.data ?? [];
-    return (providerApiLogsQuery.data ?? []).filter((log) =>
-      [
-        log.provider,
-        log.referenceId,
-        log.method,
-        log.endpoint,
-        log.statusCode,
-        log.success ? "success" : "failed",
-        log.error,
-      ].some((value) => String(value ?? "").toLowerCase().includes(keyword))
-    );
-  }, [apiLogSearch, providerApiLogsQuery.data]);
-
-  useEffect(() => setTransactionPage(1), [transactionSearch, filteredTransactions.length]);
-  useEffect(() => setCustomerPage(1), [customersQuery.data?.length]);
-  useEffect(() => setAccountPage(1), [usersQuery.data?.length]);
-  useEffect(() => setGamePage(1), [gamesQuery.data?.length]);
-  useEffect(() => setProductPage(1), [productSearch, filteredCatalog.length]);
-  useEffect(() => setAuditPage(1), [auditQuery.data?.length]);
-  useEffect(() => setApiLogPage(1), [apiLogSearch, filteredApiLogs.length]);
+  useEffect(() => setTransactionPage(1), [transactionSearch]);
+  useEffect(() => setProductPage(1), [productSearch]);
+  useEffect(() => setApiLogPage(1), [apiLogSearch]);
 
   if (authLoading || statsQuery.isLoading) {
     return (
@@ -451,20 +423,28 @@ export default function AdminDashboard() {
   }
 
   const stats = statsQuery.data;
-  const transactions = transactionsQuery.data ?? [];
-  const customers = customersQuery.data ?? [];
-  const accounts = usersQuery.data ?? [];
-  const catalog = catalogQuery.data ?? [];
-  const games = gamesQuery.data ?? [];
-  const auditLogs = auditQuery.data ?? [];
-  const providerApiLogs = providerApiLogsQuery.data ?? [];
-  const pagedTransactions = paginateRows(filteredTransactions, transactionPage, PAGE_SIZE);
-  const pagedCustomers = paginateRows(customers, customerPage, PAGE_SIZE);
-  const pagedAccounts = paginateRows(accounts, accountPage, PAGE_SIZE);
-  const pagedGames = paginateRows(games, gamePage, PAGE_SIZE);
-  const pagedCatalog = paginateRows(filteredCatalog, productPage, PAGE_SIZE);
-  const pagedAuditLogs = paginateRows(auditLogs, auditPage, PAGE_SIZE);
-  const pagedApiLogs = paginateRows(filteredApiLogs, apiLogPage, PAGE_SIZE);
+  const transactions = transactionsQuery.data?.rows ?? [];
+  const customers = customersQuery.data?.rows ?? [];
+  const accounts = usersQuery.data?.rows ?? [];
+  const catalog = catalogQuery.data?.rows ?? [];
+  const games = gamesQuery.data?.rows ?? [];
+  const gameOptions = gameOptionsQuery.data?.rows ?? [];
+  const auditLogs = auditQuery.data?.rows ?? [];
+  const providerApiLogs = providerApiLogsQuery.data?.rows ?? [];
+  const transactionTotal = transactionsQuery.data?.total ?? 0;
+  const customerTotal = customersQuery.data?.total ?? 0;
+  const accountTotal = usersQuery.data?.total ?? 0;
+  const gameTotal = gamesQuery.data?.total ?? 0;
+  const catalogTotal = catalogQuery.data?.total ?? 0;
+  const auditTotal = auditQuery.data?.total ?? 0;
+  const apiLogTotal = providerApiLogsQuery.data?.total ?? 0;
+  const transactionPages = Math.max(1, Math.ceil(transactionTotal / PAGE_SIZE));
+  const customerPages = Math.max(1, Math.ceil(customerTotal / PAGE_SIZE));
+  const accountPages = Math.max(1, Math.ceil(accountTotal / PAGE_SIZE));
+  const gamePages = Math.max(1, Math.ceil(gameTotal / PAGE_SIZE));
+  const catalogPages = Math.max(1, Math.ceil(catalogTotal / PAGE_SIZE));
+  const auditPages = Math.max(1, Math.ceil(auditTotal / PAGE_SIZE));
+  const apiLogPages = Math.max(1, Math.ceil(apiLogTotal / PAGE_SIZE));
 
   const createProductSubmit = () => {
     if (!productForm.gameId || !productForm.name || !productForm.providerCode) {
@@ -691,13 +671,13 @@ export default function AdminDashboard() {
                 className="max-w-xl bg-slate-950 border-slate-700 text-white"
               />
               <TransactionTable
-                rows={pagedTransactions.rows}
+                rows={transactions}
                 onSync={(referenceId) => syncPayment.mutate({ referenceId })}
                 onRetry={(referenceId) => retryTopup.mutate({ referenceId })}
                 onStatus={(referenceId, status) => updateStatus.mutate({ referenceId, status })}
                 showCustomer
               />
-              <PaginationControls page={transactionPage} totalPages={pagedTransactions.totalPages} totalRows={filteredTransactions.length} onPageChange={setTransactionPage} />
+              <PaginationControls page={transactionPage} totalPages={transactionPages} totalRows={transactionTotal} onPageChange={setTransactionPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -713,7 +693,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:hidden">
-                {pagedCustomers.rows.map((customer, index) => (
+                {customers.map((customer, index) => (
                   <div key={`${customer.customerEmail}-${customer.customerPhone}-${index}`} className="rounded-md border border-slate-800 bg-slate-950 p-4">
                     <p className="font-bold text-white">{customer.customerName || "Pembeli"}</p>
                     <p className="mt-1 break-all text-sm text-slate-400">{customer.customerEmail || "-"}</p>
@@ -725,7 +705,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {!pagedCustomers.rows.length && <p className="py-6 text-center text-slate-500">Belum ada pembeli</p>}
+                {!customers.length && <p className="py-6 text-center text-slate-500">Belum ada pembeli</p>}
               </div>
               <div className="hidden overflow-x-auto md:block">
                 <Table>
@@ -740,7 +720,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pagedCustomers.rows.map((customer, index) => (
+                    {customers.map((customer, index) => (
                       <TableRow key={`${customer.customerEmail}-${customer.customerPhone}-${index}`} className="border-slate-800">
                         <TableCell className="text-white">{customer.customerName || "-"}</TableCell>
                         <TableCell className="text-slate-300">{customer.customerEmail || "-"}</TableCell>
@@ -753,7 +733,7 @@ export default function AdminDashboard() {
                   </TableBody>
                 </Table>
               </div>
-              <PaginationControls page={customerPage} totalPages={pagedCustomers.totalPages} totalRows={customers.length} onPageChange={setCustomerPage} />
+              <PaginationControls page={customerPage} totalPages={customerPages} totalRows={customerTotal} onPageChange={setCustomerPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -769,11 +749,11 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <UserTable
-                rows={pagedAccounts.rows}
+                rows={accounts}
                 onRole={(userId, role) => updateUserRole.mutate({ userId, role })}
                 onResetPassword={(userId, password) => resetUserPassword.mutate({ userId, password })}
               />
-              <PaginationControls page={accountPage} totalPages={pagedAccounts.totalPages} totalRows={accounts.length} onPageChange={setAccountPage} />
+              <PaginationControls page={accountPage} totalPages={accountPages} totalRows={accountTotal} onPageChange={setAccountPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -814,7 +794,7 @@ export default function AdminDashboard() {
             <CardHeader><CardTitle className="text-white">Daftar Game</CardTitle></CardHeader>
             <CardContent>
               <div className="grid gap-3 md:hidden">
-                {pagedGames.rows.map((game) => (
+                {games.map((game) => (
                   <div key={game.id} className="rounded-md border border-slate-800 bg-slate-950 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -834,7 +814,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {!pagedGames.rows.length && <p className="py-6 text-center text-slate-500">Belum ada game</p>}
+                {!games.length && <p className="py-6 text-center text-slate-500">Belum ada game</p>}
               </div>
               <div className="hidden overflow-x-auto md:block">
                 <Table>
@@ -848,7 +828,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pagedGames.rows.map((game) => (
+                    {games.map((game) => (
                       <TableRow key={game.id} className="border-slate-800">
                         <TableCell className="text-white">{game.name}</TableCell>
                         <TableCell className="font-mono text-xs text-slate-400">{game.slug}</TableCell>
@@ -868,7 +848,7 @@ export default function AdminDashboard() {
                   </TableBody>
                 </Table>
               </div>
-              <PaginationControls page={gamePage} totalPages={pagedGames.totalPages} totalRows={games.length} onPageChange={setGamePage} />
+              <PaginationControls page={gamePage} totalPages={gamePages} totalRows={gameTotal} onPageChange={setGamePage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -910,7 +890,7 @@ export default function AdminDashboard() {
                 <Select value={productForm.gameId} onValueChange={(value) => setProductForm({ ...productForm, gameId: value })}>
                   <SelectTrigger className="w-full bg-slate-950 border-slate-700 text-white"><SelectValue placeholder="Pilih game" /></SelectTrigger>
                   <SelectContent>
-                    {games.map((game) => <SelectItem key={game.id} value={game.id.toString()}>{game.name}</SelectItem>)}
+                    {gameOptions.map((game) => <SelectItem key={game.id} value={game.id.toString()}>{game.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
@@ -952,8 +932,8 @@ export default function AdminDashboard() {
                 placeholder="Cari game, produk, provider code, status..."
                 className="max-w-xl bg-slate-950 border-slate-700 text-white"
               />
-              <ProductTable rows={pagedCatalog.rows} onUpdate={updateProduct.mutate} />
-              <PaginationControls page={productPage} totalPages={pagedCatalog.totalPages} totalRows={filteredCatalog.length} onPageChange={setProductPage} />
+              <ProductTable rows={catalog} onUpdate={updateProduct.mutate} />
+              <PaginationControls page={productPage} totalPages={catalogPages} totalRows={catalogTotal} onPageChange={setProductPage} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -1085,7 +1065,7 @@ export default function AdminDashboard() {
           <Card className="bg-slate-900/50 border-slate-800">
             <CardHeader><CardTitle className="text-white">Audit Log</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              {pagedAuditLogs.rows.map((log) => (
+              {auditLogs.map((log) => (
                 <div key={log.id} className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm">
                   <div>
                     <p className="text-white">{log.action}</p>
@@ -1094,8 +1074,8 @@ export default function AdminDashboard() {
                   <span className="text-xs text-slate-500">{formatDate(log.createdAt)}</span>
                 </div>
               ))}
-              {!pagedAuditLogs.rows.length && <p className="text-center text-slate-500 py-6">Belum ada audit log</p>}
-              <PaginationControls page={auditPage} totalPages={pagedAuditLogs.totalPages} totalRows={auditLogs.length} onPageChange={setAuditPage} />
+              {!auditLogs.length && <p className="text-center text-slate-500 py-6">Belum ada audit log</p>}
+              <PaginationControls page={auditPage} totalPages={auditPages} totalRows={auditTotal} onPageChange={setAuditPage} />
             </CardContent>
           </Card>
 
@@ -1117,8 +1097,8 @@ export default function AdminDashboard() {
                 placeholder="Cari provider, reference, endpoint, status..."
                 className="max-w-xl bg-slate-950 border-slate-700 text-white"
               />
-              <ProviderApiLogTable rows={pagedApiLogs.rows} />
-              <PaginationControls page={apiLogPage} totalPages={pagedApiLogs.totalPages} totalRows={filteredApiLogs.length} onPageChange={setApiLogPage} />
+              <ProviderApiLogTable rows={providerApiLogs} />
+              <PaginationControls page={apiLogPage} totalPages={apiLogPages} totalRows={apiLogTotal} onPageChange={setApiLogPage} />
             </CardContent>
           </Card>
 
@@ -1930,16 +1910,6 @@ function formatJsonText(value: string | null) {
   } catch {
     return value;
   }
-}
-
-function paginateRows<T>(rows: T[], page: number, pageSize: number) {
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const safePage = Math.min(Math.max(page, 1), totalPages);
-  const start = (safePage - 1) * pageSize;
-  return {
-    rows: rows.slice(start, start + pageSize),
-    totalPages,
-  };
 }
 
 function PaginationControls({

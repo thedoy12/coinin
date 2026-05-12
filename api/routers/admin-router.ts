@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { auditLogs, transactions, games, products, providerApiLogs, users, popupSettings } from "@db/schema";
-import { and, desc, eq, sql, count, lt, ne, or } from "drizzle-orm";
+import { and, asc, desc, eq, sql, count, ilike, lt, ne, or } from "drizzle-orm";
 import { writeAuditLog } from "../lib/audit";
 import { hashPassword, verifyPassword } from "../lib/password";
 import {
@@ -61,6 +61,15 @@ const popupSettingsInput = z.object({
   buttonText: z.string().trim().min(1).max(60),
   buttonUrl: z.string().trim().min(1).max(500),
   displayDelayMs: z.number().int().min(0).max(10000),
+});
+
+const pageInput = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(25),
+});
+
+const searchPageInput = pageInput.extend({
+  search: z.string().trim().max(100).default(""),
 });
 
 export const adminRouter = createRouter({
@@ -141,57 +150,95 @@ export const adminRouter = createRouter({
     };
   }),
 
-  catalog: adminQuery.query(async () => {
+  catalog: adminQuery.input(searchPageInput).query(async ({ input }) => {
     const db = getDb();
-    const rows = await db
+    const keyword = input.search.trim();
+    const filter = and(
+      publicSafeGameFilter(),
+      publicSafeProductFilter(),
+      keyword
+        ? or(
+          ilike(products.name, `%${keyword}%`),
+          ilike(products.providerCode, `%${keyword}%`),
+          ilike(products.productType, `%${keyword}%`),
+          ilike(games.name, `%${keyword}%`),
+          ilike(games.slug, `%${keyword}%`),
+        )
+        : undefined,
+    );
+
+    const [rows, totals] = await Promise.all([
+      db
       .select({
         product: products,
         game: games,
       })
       .from(products)
       .innerJoin(games, eq(products.gameId, games.id))
-      .where(and(
-        publicSafeGameFilter(),
-        publicSafeProductFilter(),
-      ))
-      .orderBy(games.name, products.priceSell);
+      .where(filter)
+      .orderBy(asc(games.name), asc(products.priceSell))
+      .limit(input.pageSize)
+      .offset((input.page - 1) * input.pageSize),
+      db
+        .select({ total: count() })
+        .from(products)
+        .innerJoin(games, eq(products.gameId, games.id))
+        .where(filter),
+    ]);
 
-    return rows.map((row) => ({
+    return {
+      rows: rows.map((row) => ({
       ...row.product,
       gameName: row.game.name,
       gameSlug: row.game.slug,
-    }));
+      })),
+      total: totals[0]?.total ?? 0,
+    };
   }),
 
-  games: adminQuery.query(async () => {
+  games: adminQuery.input(pageInput).query(async ({ input }) => {
     const db = getDb();
-    return db
-      .select()
-      .from(games)
-      .where(publicSafeGameFilter())
-      .orderBy(games.name);
+    const [rows, totals] = await Promise.all([
+      db
+        .select()
+        .from(games)
+        .where(publicSafeGameFilter())
+        .orderBy(asc(games.name))
+        .limit(input.pageSize)
+        .offset((input.page - 1) * input.pageSize),
+      db
+        .select({ total: count() })
+        .from(games)
+        .where(publicSafeGameFilter()),
+    ]);
+    return { rows, total: totals[0]?.total ?? 0 };
   }),
 
-  users: adminQuery.query(async () => {
+  users: adminQuery.input(pageInput).query(async ({ input }) => {
     const db = getDb();
-    return db
-      .select({
-        id: users.id,
-        username: users.username,
-        name: users.name,
-        email: users.email,
-        authProvider: users.authProvider,
-        role: users.role,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        lastSignInAt: users.lastSignInAt,
-      })
-      .from(users)
-      .orderBy(desc(users.createdAt))
-      .limit(100);
+    const [rows, totals] = await Promise.all([
+      db
+        .select({
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          email: users.email,
+          authProvider: users.authProvider,
+          role: users.role,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          lastSignInAt: users.lastSignInAt,
+        })
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(input.pageSize)
+        .offset((input.page - 1) * input.pageSize),
+      db.select({ total: count() }).from(users),
+    ]);
+    return { rows, total: totals[0]?.total ?? 0 };
   }),
 
-  customers: adminQuery.query(async () => {
+  customers: adminQuery.input(pageInput).query(async ({ input }) => {
     const db = getDb();
     const rows = await db
       .select({
@@ -209,21 +256,64 @@ export const adminRouter = createRouter({
         transactions.customerPhone
       )
       .orderBy(sql`MAX(${transactions.createdAt}) DESC`)
-      .limit(200);
+      .limit(input.pageSize)
+      .offset((input.page - 1) * input.pageSize);
 
-    return rows.filter(
+    const totalRows = await db
+      .select({ total: count() })
+      .from(
+        db
+          .select({
+            customerName: transactions.customerName,
+            customerEmail: transactions.customerEmail,
+            customerPhone: transactions.customerPhone,
+          })
+          .from(transactions)
+          .groupBy(
+            transactions.customerName,
+            transactions.customerEmail,
+            transactions.customerPhone
+          )
+          .as("customer_groups")
+      );
+
+    return {
+      rows: rows.filter(
       (row) => row.customerName || row.customerEmail || row.customerPhone
-    );
+      ),
+      total: totalRows[0]?.total ?? 0,
+    };
   }),
 
-  auditLogs: adminQuery.query(async () => {
+  auditLogs: adminQuery.input(pageInput).query(async ({ input }) => {
     const db = getDb();
-    return db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(50);
+    const [rows, totals] = await Promise.all([
+      db
+        .select()
+        .from(auditLogs)
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(input.pageSize)
+        .offset((input.page - 1) * input.pageSize),
+      db.select({ total: count() }).from(auditLogs),
+    ]);
+    return { rows, total: totals[0]?.total ?? 0 };
   }),
 
-  providerApiLogs: adminQuery.query(async () => {
+  providerApiLogs: adminQuery.input(searchPageInput).query(async ({ input }) => {
     const db = getDb();
-    const rows = await db
+    const keyword = input.search.trim();
+    const filter = keyword
+      ? or(
+        ilike(providerApiLogs.provider, `%${keyword}%`),
+        ilike(providerApiLogs.referenceId, `%${keyword}%`),
+        ilike(providerApiLogs.method, `%${keyword}%`),
+        ilike(providerApiLogs.endpoint, `%${keyword}%`),
+        ilike(providerApiLogs.error, `%${keyword}%`),
+        sql`cast(${providerApiLogs.statusCode} as text) ilike ${`%${keyword}%`}`,
+      )
+      : undefined;
+    const [rows, totals] = await Promise.all([
+      db
       .select({
         id: providerApiLogs.id,
         provider: providerApiLogs.provider,
@@ -239,23 +329,46 @@ export const adminRouter = createRouter({
         createdAt: providerApiLogs.createdAt,
       })
       .from(providerApiLogs)
+      .where(filter)
       .orderBy(desc(providerApiLogs.createdAt))
-      .limit(75);
-    return rows.map((row) => ({
+      .limit(input.pageSize)
+      .offset((input.page - 1) * input.pageSize),
+      db.select({ total: count() }).from(providerApiLogs).where(filter),
+    ]);
+    return {
+      rows: rows.map((row) => ({
       ...row,
       requestPayload: truncatePayload(row.requestPayload),
       responsePayload: truncatePayload(row.responsePayload),
       error: truncatePayload(row.error),
-    }));
+      })),
+      total: totals[0]?.total ?? 0,
+    };
   }),
 
   popupSettings: adminQuery.query(async () => {
     return getPopupSettingsOrDefault();
   }),
 
-  allTransactions: adminQuery.query(async () => {
+  allTransactions: adminQuery.input(searchPageInput).query(async ({ input }) => {
     const db = getDb();
-    const rows = await db
+    const keyword = input.search.trim();
+    const filter = keyword
+      ? or(
+        ilike(transactions.referenceId, `%${keyword}%`),
+        ilike(transactions.customerName, `%${keyword}%`),
+        ilike(transactions.customerEmail, `%${keyword}%`),
+        ilike(transactions.customerPhone, `%${keyword}%`),
+        ilike(transactions.paymentStatus, `%${keyword}%`),
+        ilike(transactions.status, `%${keyword}%`),
+        ilike(transactions.topupStatus, `%${keyword}%`),
+        ilike(games.name, `%${keyword}%`),
+        ilike(products.name, `%${keyword}%`),
+      )
+      : undefined;
+
+    const [rows, totals] = await Promise.all([
+      db
       .select({
         transaction: transactions,
         game: games,
@@ -264,10 +377,20 @@ export const adminRouter = createRouter({
       .from(transactions)
       .innerJoin(games, eq(transactions.gameId, games.id))
       .innerJoin(products, eq(transactions.productId, products.id))
+      .where(filter)
       .orderBy(desc(transactions.createdAt))
-      .limit(100);
+      .limit(input.pageSize)
+      .offset((input.page - 1) * input.pageSize),
+      db
+        .select({ total: count() })
+        .from(transactions)
+        .innerJoin(games, eq(transactions.gameId, games.id))
+        .innerJoin(products, eq(transactions.productId, products.id))
+        .where(filter),
+    ]);
 
-    return rows.map((row) => ({
+    return {
+      rows: rows.map((row) => ({
       ...row.transaction,
       gameName: row.game.name,
       gameSlug: row.game.slug,
@@ -277,7 +400,9 @@ export const adminRouter = createRouter({
       profit: row.transaction.paymentStatus === "paid"
         ? row.transaction.price - row.product.priceModal
         : 0,
-    }));
+      })),
+      total: totals[0]?.total ?? 0,
+    };
   }),
 
   updateStatus: adminQuery

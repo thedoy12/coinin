@@ -20,10 +20,11 @@ export default function GameThumbnails() {
   const utils = trpc.useUtils();
   const { user, isLoading: authLoading } = useAuth({ redirectOnUnauthenticated: true });
   const isAdmin = user?.role === "admin";
-  const { data: games, isLoading } = trpc.admin.games.useQuery(undefined, {
+  const { data: gamesQuery, isLoading } = trpc.admin.games.useQuery({ page: 1, pageSize: 500 }, {
     enabled: isAdmin,
     retry: false,
   });
+  const games = gamesQuery?.rows ?? [];
 
   useSEO({
     title: "Kelola Thumbnail Game | CoinIn",
@@ -32,14 +33,14 @@ export default function GameThumbnails() {
     noindex: true,
   });
 
-  const selectedGame = games?.find((game) => game.id === selectedGameId) ?? null;
+  const selectedGame = games.find((game) => game.id === selectedGameId) ?? null;
   const filteredGames = useMemo(() => {
     const value = search.toLowerCase();
-    return games?.filter((game) =>
+    return games.filter((game) =>
       game.name.toLowerCase().includes(value) ||
       game.slug.toLowerCase().includes(value) ||
       (game.category ?? "").toLowerCase().includes(value),
-    ) ?? [];
+    );
   }, [games, search]);
 
   const updateGame = useAdminAction<{ gameId: number; thumbnail: string }>({
@@ -57,7 +58,7 @@ export default function GameThumbnails() {
   });
 
   const handleSelectGame = (gameId: number) => {
-    const game = games?.find((item) => item.id === gameId);
+    const game = games.find((item) => item.id === gameId);
     setSelectedGameId(gameId);
     setThumbnailUrl(game?.thumbnail ?? "");
     setFile(null);
