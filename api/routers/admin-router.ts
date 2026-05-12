@@ -65,7 +65,7 @@ const popupSettingsInput = z.object({
 
 const pageInput = z.object({
   page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(100).default(25),
+  pageSize: z.number().int().min(1).max(500).default(25),
 });
 
 const searchPageInput = pageInput.extend({
