@@ -6,8 +6,8 @@ const PBKDF2_DIGEST = "sha256";
 
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
-  const hash = createPasswordHmac(password, salt);
-  return `hmac-sha256:${salt}:${hash}`;
+  const hash = scryptSync(password, salt, KEY_LENGTH).toString("hex");
+  return `scrypt:${salt}:${hash}`;
 }
 
 export function verifyPassword(password: string, storedHash: string | null) {
