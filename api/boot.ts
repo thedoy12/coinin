@@ -25,7 +25,7 @@ import { appendClearSessionCookie, appendSessionCookie } from "./lib/cookies";
 import { publicSafeGameFilter, publicSafeProductFilter } from "./lib/catalog-safety";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
-const publicSiteUrl = "https://www.coinin.store";
+const publicSiteUrl = "https://coinin.store";
 
 app.onError((error, c) => {
   console.error("Unhandled API error:", error);
