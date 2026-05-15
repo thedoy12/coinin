@@ -15,7 +15,7 @@ import { ensureRuntimeSchema, getDb } from "./queries/connection";
 import { games, products, transactions, users } from "@db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { createQrisPayment, parsePaymentNotification, verifyPaymentCallback } from "./lib/payment";
-import { expireOldTransactions, fulfillPaidTransaction, syncProcessingTopups } from "./lib/transaction";
+import { expireOldTransactions, fulfillDirectTopupCheckout, fulfillPaidTransaction, syncProcessingTopups } from "./lib/transaction";
 import { rateLimit } from "./lib/rate-limit";
 import { authenticateRequest } from "./lib/session-auth";
 import { findUserByLogin } from "./queries/users";
@@ -713,6 +713,15 @@ async function createPaymentApi(input: z.infer<typeof createPaymentInput>) {
 
   const normalizedPhone = normalizePhone(input.customerPhone);
   const normalizedEmail = input.customerEmail.toLowerCase();
+  if (env.directTopupOnCheckout) {
+    return fulfillDirectTopupCheckout({
+      referenceId: input.referenceId,
+      customerName: input.customerName,
+      customerEmail: normalizedEmail,
+      customerPhone: normalizedPhone,
+    });
+  }
+
   const paymentResult = await createQrisPayment({
     referenceId: input.referenceId,
     amount: tx.price,

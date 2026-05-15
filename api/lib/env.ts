@@ -64,4 +64,5 @@ export const env = {
   paymentSecretKey: firstDefined("PAYMENT_SECRET_KEY", "TRIPAY_PRIVATE_KEY"),
   paymentMethod: firstDefined("PAYMENT_METHOD", "TRIPAY_PAYMENT_METHOD") || "QRIS",
   paymentApiUrl: firstDefined("PAYMENT_API_URL"),
+  directTopupOnCheckout: isTruthyEnv("DIRECT_TOPUP_ON_CHECKOUT"),
 };
