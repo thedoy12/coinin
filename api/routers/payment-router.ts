@@ -5,8 +5,6 @@ import { games, products, transactions } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { createQrisPayment } from "../lib/payment";
 import { TRPCError } from "@trpc/server";
-import { env } from "../lib/env";
-import { fulfillDirectTopupCheckout } from "../lib/transaction";
 
 const referenceIdInput = z.string().trim().regex(/^TRX-[A-Z0-9_-]{8,32}$/);
 const phoneInput = z
@@ -89,15 +87,6 @@ export const paymentRouter = createRouter({
 
       const normalizedPhone = normalizePhone(input.customerPhone);
       const normalizedEmail = input.customerEmail.toLowerCase();
-      if (env.directTopupOnCheckout) {
-        return fulfillDirectTopupCheckout({
-          referenceId: input.referenceId,
-          customerName: input.customerName,
-          customerEmail: normalizedEmail,
-          customerPhone: normalizedPhone,
-        });
-      }
-
       const paymentResult = await createQrisPayment({
         referenceId: input.referenceId,
         amount: tx.price,

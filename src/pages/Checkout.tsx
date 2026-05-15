@@ -73,10 +73,7 @@ export default function Checkout() {
         customerEmail: customerEmail.trim(),
         customerPhone: customerPhone.trim(),
       });
-      if (result.success && result.data?.direct_topup) {
-        toast.success("Order langsung dikirim ke provider!");
-        window.location.href = result.data.checkout_url || `/status/${referenceId}`;
-      } else if (result.success && result.data?.checkout_url) {
+      if (result.success && result.data?.checkout_url) {
         toast.success("Halaman pembayaran berhasil dibuat!");
         window.location.href = result.data.checkout_url;
       } else {
@@ -293,7 +290,7 @@ export default function Checkout() {
                 {isCreatingPayment ? "Memproses..." : "Bayar Sekarang"}
               </Button>
               <p className="text-xs text-center text-slate-500">
-                Order diproses melalui sistem CoinIn
+                Pembayaran aman melalui sistem pembayaran CoinIn
               </p>
             </CardContent>
           </Card>
@@ -401,6 +398,5 @@ type PaymentCreateResponse = {
   error?: string;
     data?: {
       checkout_url?: string | null;
-      direct_topup?: boolean;
     };
 };

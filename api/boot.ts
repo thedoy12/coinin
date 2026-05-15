@@ -15,7 +15,7 @@ import { ensureRuntimeSchema, getDb } from "./queries/connection";
 import { games, products, transactions, users } from "@db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { createQrisPayment, parsePaymentNotification, verifyPaymentCallback } from "./lib/payment";
-import { expireOldTransactions, fulfillDirectTopupCheckout, fulfillPaidTransaction, syncProcessingTopups } from "./lib/transaction";
+import { expireOldTransactions, fulfillPaidTransaction, syncProcessingTopups } from "./lib/transaction";
 import { rateLimit } from "./lib/rate-limit";
 import { authenticateRequest } from "./lib/session-auth";
 import { findUserByLogin } from "./queries/users";
@@ -31,6 +31,17 @@ const publicSiteUrl = "https://coinin.store";
 app.onError((error, c) => {
   console.error("Unhandled API error:", error);
   return c.json({ error: "Internal server error" }, 500);
+});
+
+app.use("*", async (c, next) => {
+  if (!env.maintenanceMode || c.req.path === "/api/health") {
+    await next();
+    return;
+  }
+
+  c.header("Cache-Control", "no-store, max-age=0");
+  c.header("Retry-After", "3600");
+  return c.html(renderMaintenancePage(), 503);
 });
 
 app.use("/api/trpc/*", rateLimit({ windowMs: 60_000, max: 120, keyPrefix: "trpc" }));
@@ -713,15 +724,6 @@ async function createPaymentApi(input: z.infer<typeof createPaymentInput>) {
 
   const normalizedPhone = normalizePhone(input.customerPhone);
   const normalizedEmail = input.customerEmail.toLowerCase();
-  if (env.directTopupOnCheckout) {
-    return fulfillDirectTopupCheckout({
-      referenceId: input.referenceId,
-      customerName: input.customerName,
-      customerEmail: normalizedEmail,
-      customerPhone: normalizedPhone,
-    });
-  }
-
   const paymentResult = await createQrisPayment({
     referenceId: input.referenceId,
     amount: tx.price,
@@ -781,6 +783,79 @@ function handlePublicApiError(c: Context, error: unknown, fallback: string) {
   }
   console.error(`${fallback}:`, error);
   return c.json({ error: fallback }, 500);
+}
+
+function renderMaintenancePage() {
+  return `<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>CoinIn Sedang Maintenance</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #08111f;
+        color: #f8fafc;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main {
+        width: min(92vw, 620px);
+        padding: 32px 24px;
+        text-align: center;
+      }
+      .mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        margin-bottom: 22px;
+        border: 1px solid rgba(34, 211, 238, 0.4);
+        background: rgba(34, 211, 238, 0.08);
+        color: #67e8f9;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 6vw, 4rem);
+        line-height: 1;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+      p {
+        margin: 0 auto;
+        max-width: 42rem;
+        color: #cbd5e1;
+        font-size: 1rem;
+        line-height: 1.7;
+      }
+      .status {
+        margin-top: 24px;
+        color: #fbbf24;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark">CI</div>
+      <h1>Sedang Maintenance</h1>
+      <p>CoinIn sedang kami kunci sementara untuk pemeliharaan sistem. Semua transaksi dan akses checkout ditutup sampai maintenance selesai.</p>
+      <div class="status">Maintenance Mode Active</div>
+    </main>
+  </body>
+</html>`;
 }
 
 class PublicApiError extends Error {

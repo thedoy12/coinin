@@ -192,57 +192,6 @@ export async function fulfillPaidTransaction(
   return { success: false, referenceId, error: errorMessage };
 }
 
-export async function fulfillDirectTopupCheckout(params: {
-  referenceId: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-}) {
-  const db = getDb();
-  await db
-    .update(transactions)
-    .set({
-      customerName: params.customerName,
-      customerEmail: params.customerEmail,
-      customerPhone: params.customerPhone,
-      paymentMethod: "Direct Digiflazz Testing",
-      paymentReference: params.referenceId,
-      paymentCheckoutUrl: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(transactions.referenceId, params.referenceId));
-
-  await writeAuditLog({
-    action: "transaction.direct_topup_checkout",
-    entityType: "transaction",
-    entityId: params.referenceId,
-    after: {
-      source: "DIRECT_TOPUP_ON_CHECKOUT",
-      customerEmail: params.customerEmail,
-      customerPhone: params.customerPhone,
-    },
-  });
-
-  const result = await fulfillPaidTransaction(params.referenceId, { markPaymentPaid: true });
-  if (!result.success) {
-    return {
-      success: false,
-      error: result.error,
-    };
-  }
-
-  return {
-    success: true,
-    data: {
-      reference: params.referenceId,
-      merchant_ref: params.referenceId,
-      checkout_url: `/status/${params.referenceId}`,
-      direct_topup: true,
-      topup_reference: result.topupReference ?? null,
-    },
-  };
-}
-
 export async function syncPaymentAndFulfill(referenceId: string) {
   const txResult = await getDb()
     .select({ paymentReference: transactions.paymentReference })
