@@ -32,10 +32,24 @@ fi
 
 npm ci --no-audit
 npm run build
-npm run db:push
+if [ "${RUN_DB_PUSH:-false}" = "true" ]; then
+  npm run db:push
+else
+  echo "Skipping db:push. Run with RUN_DB_PUSH=true only when schema changes are intended."
+fi
 
 pm2 startOrReload deploy/vps/ecosystem.config.cjs --env production
 pm2 save
 
-echo "CoinIn is running behind PM2 on 127.0.0.1:3001."
-echo "Check: curl http://127.0.0.1:3001/api/health"
+for attempt in {1..10}; do
+  if curl -fsS http://127.0.0.1:3001/api/health >/dev/null; then
+    echo "CoinIn is running behind PM2 on 127.0.0.1:3001."
+    echo "Check: curl http://127.0.0.1:3001/api/health"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "CoinIn did not become healthy on 127.0.0.1:3001. Recent logs:"
+pm2 logs coinin --lines 80 --nostream
+exit 1
